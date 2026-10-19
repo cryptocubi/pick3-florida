@@ -103,6 +103,12 @@ td.vacio { background: var(--bg); }
 footer { font-size: 12px; color: var(--muted); }
 footer a { color: var(--accent); }
 .aviso { font-size: 13px; color: var(--sun); }
+.vivo { font-size: 12px; font-weight: 800; color: var(--muted); letter-spacing: 0.03em; }
+.vivo.activo { color: #dc2626; animation: latido 1.6s ease-in-out infinite; }
+@keyframes latido { 50% { opacity: 0.35; } }
+.n.nuevo { animation: nuevo 1.2s ease-in-out 5; }
+@keyframes nuevo { 50% { transform: scale(1.12); box-shadow: 0 0 0 3px var(--sun); } }
+@media (prefers-reduced-motion: reduce) { .vivo.activo, .n.nuevo { animation: none; } }
 @media (max-width: 520px) { thead th, tr.dias th { font-size: 10px; letter-spacing: 0; text-transform: none; } }
 @media (max-width: 480px) { .n { font-size: 13px; padding: 1px 2px; } .n i { font-size: 9px; } }
 @media (max-width: 390px) { .largo { display: none; } .corto { display: inline; } }
@@ -154,7 +160,12 @@ const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 const $ = id => document.getElementById(id);
 
-let DATA = {}, ACTUALIZADO = null, semanas = [];
+// Puente en vivo (Cloudflare Worker): trae el número minutos después del sorteo
+const VIVO_URL = "https://pick3-vivo.martinezfuentesesteban8.workers.dev/";
+
+let BASE = {}, VIVO = {}, DATA = {}, ACTUALIZADO = null, VIVO_HORA = null, semanas = [];
+let NUEVOS = new Set(); // "fecha|M" recién llegados, para resaltarlos
+let VIVO_LISTO = false;
 
 // Fecha y hora de Florida (los sorteos son a la 1:30 pm y 9:45 pm de Florida)
 function ahoraFlorida() {
@@ -205,12 +216,15 @@ function pintarEstado() {
   if (!hoy[0]) proximo = minutos < 13 * 60 + 30 ? "hoy a la 1:30 pm (mañana)" : "mañana de hoy: esperando el número…";
   else if (!hoy[1]) proximo = minutos < 21 * 60 + 45 ? "hoy a las 9:45 pm (tarde)" : "tarde de hoy: esperando el número…";
   else proximo = "mañana a la 1:30 pm";
-  const act = ACTUALIZADO ? new Date(ACTUALIZADO).toLocaleString("es", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "—";
+  const hora = x => new Date(x).toLocaleString("es", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", second: "2-digit" });
+  const vivoOk = VIVO_HORA && Date.now() - new Date(VIVO_HORA) < 10 * 60000;
+  const vivo = vivoOk
+    ? `<span class="vivo${enHoraDeSorteo() ? " activo" : ""}">● En vivo</span><small>${enHoraDeSorteo() ? "mirando cada 30 segundos" : "comprobado"} · ${hora(VIVO_HORA)}</small>`
+    : `<small>Historial al ${ACTUALIZADO ? hora(ACTUALIZADO) : "—"}</small>`;
   $("estado").innerHTML = `<div class="ultimo">${txt}</div>
     <small>Próximo sorteo: ${proximo} · hora de Florida</small>
-    <div class="fila-btn"><small>Datos al ${act}</small><button type="button" id="refrescar">Actualizar ahora</button></div>
-    <div class="aviso" id="aviso" hidden></div>`;
-  $("refrescar").addEventListener("click", () => cargar(true));
+    <div class="fila-btn">${vivo}<button type="button" id="refrescar">Actualizar ahora</button></div>`;
+  $("refrescar").addEventListener("click", () => { cargar(true); enVivo(); });
 }
 
 function clasesNum(k, num, entra, porLinea, porFijo, marcar) {
@@ -256,7 +270,7 @@ function render() {
       const fecha = `<span class="fecha"><b>${DIAS_C[i]}</b> ${d.getDate()}${esHoy ? " · hoy" : ""}</span>`;
       if (!r && f > hoy) return `<td class="vacio"><div class="dia">${fecha}</div></td>`;
       const celda = (k, num, hora) => {
-        if (num) return `<span class="${clasesNum(k, num, entra(k), porLinea, porFijo, marcar)}" title="${k === "M" ? "Mañana" : "Tarde"} ${num}"><i>${k}</i><b>${num.slice(1)}</b></span>`;
+        if (num) return `<span class="${clasesNum(k, num, entra(k), porLinea, porFijo, marcar)}${NUEVOS.has(f + "|" + k) ? " nuevo" : ""}" title="${k === "M" ? "Mañana" : "Tarde"} ${num}"><i>${k}</i><b>${num.slice(1)}</b></span>`;
         const pendiente = f === hoy ? (minutos < hora ? "··" : "…") : "–";
         return `<span class="n ${k.toLowerCase()} espera"><i>${k}</i><b>${pendiente}</b></span>`;
       };
@@ -267,24 +281,68 @@ function render() {
   $("cal").innerHTML = html;
 }
 
-function aplicar(json) {
-  DATA = json.sorteos;
-  ACTUALIZADO = json.actualizado;
+// El historial (datos.json) manda; lo en vivo rellena lo que aún no esté guardado
+function mezclar() {
+  const antes = DATA;
+  DATA = { ...BASE };
+  for (const [f, v] of Object.entries(VIVO)) {
+    const fila = DATA[f] ? [...DATA[f]] : [null, null];
+    v.forEach((n, i) => { if (!fila[i] && /^\d{3}$/.test(n || "")) fila[i] = n; });
+    DATA[f] = fila;
+  }
+  // Solo es "nuevo" lo que llega después de la primera vuelta en vivo
+  if (VIVO_LISTO && Object.keys(antes).length) {
+    for (const [f, v] of Object.entries(DATA)) {
+      v.forEach((n, i) => { if (n && !(antes[f] && antes[f][i])) NUEVOS.add(f + "|" + "MT"[i]); });
+    }
+  }
+}
+
+function aplicar() {
+  if (!Object.keys(BASE).length && !Object.keys(VIVO).length) return;
+  const habia = NUEVOS.size;
+  mezclar();
   armarSemanas();
   pintarEstado();
   render();
+  if (NUEVOS.size > habia && navigator.vibrate && navigator.userActivation?.hasBeenActive) navigator.vibrate(200);
 }
 
 async function cargar(forzar) {
   try {
     const r = await fetch("datos.json" + (forzar ? "?t=" + Date.now() : ""), { cache: "no-store" });
     if (!r.ok) throw new Error("HTTP " + r.status);
-    aplicar(await r.json());
+    const json = await r.json();
+    BASE = json.sorteos;
+    ACTUALIZADO = json.actualizado;
+    aplicar();
   } catch (e) {
-    const a = $("aviso");
-    if (a) { a.hidden = false; a.textContent = "Sin conexión: se muestran los últimos números guardados."; }
-    else $("estado").innerHTML = `<div class="aviso">No se pudieron cargar los números. Revisa la conexión y vuelve a abrir la app.</div>`;
+    if (Object.keys(DATA).length) return;
+    $("estado").innerHTML = `<div class="aviso">No se pudieron cargar los números. Revisa la conexión y vuelve a abrir la app.</div>`;
   }
+}
+
+async function enVivo() {
+  if (!VIVO_URL.startsWith("http")) return;
+  try {
+    const r = await fetch(VIVO_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const json = await r.json();
+    VIVO = json.sorteos || {};
+    VIVO_HORA = json.hora || new Date().toISOString();
+    aplicar();
+    VIVO_LISTO = true;
+  } catch (e) { /* sin conexión: queda lo último que se vio */ }
+}
+
+// Cerca de cada sorteo mira cada 30 segundos; el resto del tiempo cada 5 minutos
+function enHoraDeSorteo() {
+  const m = ahoraFlorida().minutos;
+  return (m >= 13 * 60 + 25 && m <= 14 * 60 + 45) || (m >= 21 * 60 + 40 && m <= 23 * 60);
+}
+function vigilar() {
+  if (document.visibilityState === "visible") enVivo();
+  setTimeout(vigilar, enHoraDeSorteo() ? 30000 : 5 * 60000);
 }
 
 try {
@@ -299,9 +357,12 @@ try {
 }));
 
 cargar(false);
-// Al volver a la app, y cada 5 minutos con la app abierta, mira si hay números nuevos
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") cargar(true); });
-setInterval(() => { if (document.visibilityState === "visible") cargar(true); }, 5 * 60 * 1000);
+vigilar();
+// Al volver a la app mira enseguida; con la app abierta, el historial cada 10 minutos
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { cargar(true); enVivo(); } });
+setInterval(() => { if (document.visibilityState === "visible") cargar(true); }, 10 * 60 * 1000);
+// Cada minuto vuelve a pintar el estado (cambia "esperando" según la hora)
+setInterval(() => { if (Object.keys(DATA).length) { pintarEstado(); render(); } }, 60 * 1000);
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
