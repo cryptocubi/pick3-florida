@@ -58,7 +58,9 @@ def oficial():
         texto = open(txt, encoding="utf-8", errors="ignore").read()
     res = {}
     for mes, dia, anio, k, a, b, c in re.findall(r"(\d\d)/(\d\d)/(\d\d)\s+([EM])\s+(\d)-\s*(\d)\s*-\s*(\d)", texto):
-        fecha = dt.date(2000 + int(anio), int(mes), int(dia))
+        # El historial empieza en 1988: "99" es 1999, no 2099
+        anio = int(anio) + (1900 if int(anio) >= 80 else 2000)
+        fecha = dt.date(anio, int(mes), int(dia))
         if fecha >= DESDE:
             res.setdefault(fecha.isoformat(), {})["M" if k == "M" else "T"] = a + b + c
     return res
@@ -129,7 +131,9 @@ def main():
                         print(f"  {nombre} corrige {fecha} {k}: {fila[i]} -> {n}")
                     fila[i] = n
 
-    sorteos = dict(sorted(sorteos.items()))
+    # Fuera las fechas imposibles (antes del inicio o en el futuro)
+    manana = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1)).date().isoformat()
+    sorteos = {f: v for f, v in sorted(sorteos.items()) if DESDE.isoformat() <= f <= manana and (v[0] or v[1])}
     cambio = sorteos != viejo["sorteos"]
     if cambio:
         nuevo = {
