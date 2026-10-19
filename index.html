@@ -130,9 +130,10 @@ footer a { color: var(--accent); }
     </label>
     <label for="comparar">Comparar
       <select id="comparar">
-        <option value="todo">Mañana y tarde juntas</option>
-        <option value="M">Mañana con mañana</option>
-        <option value="T">Tarde con tarde</option>
+        <option value="sep">Mañana con mañana y tarde con tarde</option>
+        <option value="M">Solo la mañana</option>
+        <option value="T">Solo la tarde</option>
+        <option value="todo">Mañana y tarde mezcladas</option>
       </select>
     </label>
   </div>
@@ -223,12 +224,12 @@ function pintarEstado() {
   $("refrescar").addEventListener("click", () => { cargar(true); enVivo(); });
 }
 
-function clasesNum(k, num, entra, porLinea, porFijo, marcar) {
+function clasesNum(k, num, entra, porLinea, porFijo, marcar, g) {
   const f = num.slice(1);
   let c = "n " + k.toLowerCase();
   if (entra) {
-    if (marcar === "linea" && porLinea[f[0]] > 1) c += " c" + f[0];
-    if (porFijo[f] > 1) c += " same";
+    if (marcar === "linea" && porLinea[g + f[0]] > 1) c += " c" + f[0];
+    if (porFijo[g + f] > 1) c += " same";
   }
   return c;
 }
@@ -257,16 +258,21 @@ function render() {
       if (r[1]) tiradas.push({ k: "T", f: r[1].slice(1) });
     });
     const porLinea = {}, porFijo = {};
-    tiradas.filter(t => comparar === "todo" || t.k === comparar)
-      .forEach(t => { porLinea[t.f[0]] = (porLinea[t.f[0]] || 0) + 1; porFijo[t.f] = (porFijo[t.f] || 0) + 1; });
-    const entra = k => comparar === "todo" || comparar === k;
+    // grupo: con "mezcladas" todo cuenta junto; si no, la mañana solo con la mañana y la tarde solo con la tarde
+    const grupo = k => comparar === "todo" ? "" : k;
+    tiradas.filter(t => comparar === "todo" || comparar === "sep" || t.k === comparar).forEach(t => {
+      const g = grupo(t.k);
+      porLinea[g + t.f[0]] = (porLinea[g + t.f[0]] || 0) + 1;
+      porFijo[g + t.f] = (porFijo[g + t.f] || 0) + 1;
+    });
+    const entra = k => comparar === "todo" || comparar === "sep" || comparar === k;
 
     html += "<tr>" + sem.map((d, i) => {
       const f = iso(d), r = DATA[f], esHoy = f === hoy;
       const fecha = `<span class="fecha"><b>${DIAS_C[i]}</b> ${d.getDate()}${esHoy ? " · hoy" : ""}</span>`;
       if (!r && f > hoy) return `<td class="vacio"><div class="dia">${fecha}</div></td>`;
       const celda = (k, num, hora) => {
-        if (num) return `<span class="${clasesNum(k, num, entra(k), porLinea, porFijo, marcar)}" title="${k === "M" ? "Mañana" : "Tarde"} ${num}"><i>${k}</i><b>${num.slice(1)}</b></span>`;
+        if (num) return `<span class="${clasesNum(k, num, entra(k), porLinea, porFijo, marcar, grupo(k))}" title="${k === "M" ? "Mañana" : "Tarde"} ${num}"><i>${k}</i><b>${num.slice(1)}</b></span>`;
         const pendiente = f === hoy ? (minutos < hora ? "··" : "…") : "–";
         return `<span class="n ${k.toLowerCase()} espera"><i>${k}</i><b>${pendiente}</b></span>`;
       };
@@ -332,13 +338,13 @@ function vigilar() {
 }
 
 try {
-  const p = JSON.parse(localStorage.getItem("pick3-cal") || "{}");
+  const p = JSON.parse(localStorage.getItem("pick3-cal2") || "{}");
   if (p.marcar) $("marcar").value = p.marcar;
   if (p.comparar) $("comparar").value = p.comparar;
   if (p.anio) $("anio").innerHTML = `<option value="${p.anio}">${p.anio}</option>`;
 } catch (e) {}
 ["anio", "marcar", "comparar"].forEach(id => $(id).addEventListener("change", () => {
-  try { localStorage.setItem("pick3-cal", JSON.stringify({ anio: $("anio").value, marcar: $("marcar").value, comparar: $("comparar").value })); } catch (e) {}
+  try { localStorage.setItem("pick3-cal2", JSON.stringify({ anio: $("anio").value, marcar: $("marcar").value, comparar: $("comparar").value })); } catch (e) {}
   render();
 }));
 
