@@ -1,5 +1,5 @@
 // Guarda la app para abrirla sin internet. Los números (datos.json) se piden siempre a la red primero.
-const CACHE = "pick3-v2";
+const CACHE = "pick3-v3";
 const APP = ["./", "index.html", "manifest.webmanifest", "icono-192.png", "icono-512.png", "icono-180.png"];
 
 self.addEventListener("install", e => {

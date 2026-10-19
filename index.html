@@ -106,9 +106,7 @@ footer a { color: var(--accent); }
 .vivo { font-size: 12px; font-weight: 800; color: var(--muted); letter-spacing: 0.03em; }
 .vivo.activo { color: #dc2626; animation: latido 1.6s ease-in-out infinite; }
 @keyframes latido { 50% { opacity: 0.35; } }
-.n.nuevo { animation: nuevo 1.2s ease-in-out 5; }
-@keyframes nuevo { 50% { transform: scale(1.12); box-shadow: 0 0 0 3px var(--sun); } }
-@media (prefers-reduced-motion: reduce) { .vivo.activo, .n.nuevo { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .vivo.activo { animation: none; } }
 @media (max-width: 520px) { thead th, tr.dias th { font-size: 10px; letter-spacing: 0; text-transform: none; } }
 @media (max-width: 480px) { .n { font-size: 13px; padding: 1px 2px; } .n i { font-size: 9px; } }
 @media (max-width: 390px) { .largo { display: none; } .corto { display: inline; } }
@@ -164,8 +162,6 @@ const $ = id => document.getElementById(id);
 const VIVO_URL = "https://pick3-vivo.martinezfuentesesteban8.workers.dev/";
 
 let BASE = {}, VIVO = {}, DATA = {}, ACTUALIZADO = null, VIVO_HORA = null, semanas = [];
-let NUEVOS = new Set(); // "fecha|M" recién llegados, para resaltarlos
-let VIVO_LISTO = false;
 
 // Fecha y hora de Florida (los sorteos son a la 1:30 pm y 9:45 pm de Florida)
 function ahoraFlorida() {
@@ -270,7 +266,7 @@ function render() {
       const fecha = `<span class="fecha"><b>${DIAS_C[i]}</b> ${d.getDate()}${esHoy ? " · hoy" : ""}</span>`;
       if (!r && f > hoy) return `<td class="vacio"><div class="dia">${fecha}</div></td>`;
       const celda = (k, num, hora) => {
-        if (num) return `<span class="${clasesNum(k, num, entra(k), porLinea, porFijo, marcar)}${NUEVOS.has(f + "|" + k) ? " nuevo" : ""}" title="${k === "M" ? "Mañana" : "Tarde"} ${num}"><i>${k}</i><b>${num.slice(1)}</b></span>`;
+        if (num) return `<span class="${clasesNum(k, num, entra(k), porLinea, porFijo, marcar)}" title="${k === "M" ? "Mañana" : "Tarde"} ${num}"><i>${k}</i><b>${num.slice(1)}</b></span>`;
         const pendiente = f === hoy ? (minutos < hora ? "··" : "…") : "–";
         return `<span class="n ${k.toLowerCase()} espera"><i>${k}</i><b>${pendiente}</b></span>`;
       };
@@ -283,29 +279,20 @@ function render() {
 
 // El historial (datos.json) manda; lo en vivo rellena lo que aún no esté guardado
 function mezclar() {
-  const antes = DATA;
   DATA = { ...BASE };
   for (const [f, v] of Object.entries(VIVO)) {
     const fila = DATA[f] ? [...DATA[f]] : [null, null];
     v.forEach((n, i) => { if (!fila[i] && /^\d{3}$/.test(n || "")) fila[i] = n; });
     DATA[f] = fila;
   }
-  // Solo es "nuevo" lo que llega después de la primera vuelta en vivo
-  if (VIVO_LISTO && Object.keys(antes).length) {
-    for (const [f, v] of Object.entries(DATA)) {
-      v.forEach((n, i) => { if (n && !(antes[f] && antes[f][i])) NUEVOS.add(f + "|" + "MT"[i]); });
-    }
-  }
 }
 
 function aplicar() {
   if (!Object.keys(BASE).length && !Object.keys(VIVO).length) return;
-  const habia = NUEVOS.size;
   mezclar();
   armarSemanas();
   pintarEstado();
   render();
-  if (NUEVOS.size > habia && navigator.vibrate && navigator.userActivation?.hasBeenActive) navigator.vibrate(200);
 }
 
 async function cargar(forzar) {
@@ -331,7 +318,6 @@ async function enVivo() {
     VIVO = json.sorteos || {};
     VIVO_HORA = json.hora || new Date().toISOString();
     aplicar();
-    VIVO_LISTO = true;
   } catch (e) { /* sin conexión: queda lo último que se vio */ }
 }
 
