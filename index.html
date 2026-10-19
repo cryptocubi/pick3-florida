@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pick 3 Florida</title>
+<meta name="description" content="Fijos del Pick 3 de Florida, mañana y tarde, en calendario de lunes a domingo.">
+<meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icono-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icono-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pick 3">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=JetBrains+Mono:wght@500;700;800&display=swap">
+<style>
+/* Calendario corrido: cada fila = una semana lunes–domingo, cada celda = un día con el fijo de mañana y de tarde */
+:root {
+  --bg: #f2f5f4;
+  --surface: #ffffff;
+  --fg: #13201e;
+  --muted: #66746f;
+  --line: #cfdad6;
+  --accent: #0f766e;
+  --sun: #c2410c;
+  --same: #111111;
+  --hoy: #0f766e;
+  --l0: #fde047; --l1: #86efac; --l2: #7dd3fc; --l3: #f9a8d4; --l4: #fdba74;
+  --l5: #c4b5fd; --l6: #5eead4; --l7: #fca5a5; --l8: #bef264; --l9: #a5b4fc;
+  --lfg: #111a18;
+  --font-display: "Archivo", system-ui, sans-serif;
+  --font-num: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1514; --surface: #141f1d; --fg: #e3edeb; --muted: #93a5a1; --line: #2c3c39;
+    --accent: #2dd4bf; --sun: #fb923c; --same: #ffffff; --hoy: #2dd4bf;
+    --l0: #a16207; --l1: #15803d; --l2: #0369a1; --l3: #be185d; --l4: #c2410c;
+    --l5: #6d28d9; --l6: #0f766e; --l7: #b91c1c; --l8: #4d7c0f; --l9: #4338ca;
+    --lfg: #ffffff; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-display); font-size: 15px; line-height: 1.45;
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(40px, env(safe-area-inset-bottom, 0px));
+}
+.wrap { max-width: 900px; margin: 0 auto; display: grid; gap: 14px; }
+h1 { font-size: clamp(22px, 5vw, 32px); font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+.estado { display: grid; gap: 6px; padding: 12px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
+.estado .ultimo { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+.estado .ultimo b { font-family: var(--font-num); font-size: 22px; }
+.estado .ultimo .m { color: var(--accent); font-weight: 700; }
+.estado .ultimo .t { color: var(--sun); font-weight: 700; }
+.estado small { color: var(--muted); font-size: 12px; }
+.fila-btn { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+button { font: inherit; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.controls label { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+select { font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); max-width: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 12px; color: var(--muted); align-items: center; }
+.legend .chip { font-family: var(--font-num); font-weight: 700; padding: 1px 6px; border-radius: 3px; color: var(--lfg); }
+.legend .ring { font-family: var(--font-num); font-weight: 800; padding: 0 5px; outline: 2px solid var(--same); outline-offset: -2px; border-radius: 3px; color: var(--fg); }
+.cal-box { overflow: clip; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; table-layout: fixed; font-variant-numeric: tabular-nums; }
+thead th {
+  position: sticky; top: 0; z-index: 1; background: var(--surface);
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600;
+  padding: 8px 0; border-bottom: 2px solid var(--line);
+}
+td { border: 1px solid var(--line); padding: 0; vertical-align: top; }
+tr.dias th { background: var(--bg); border-bottom: 1px solid var(--line); padding: 4px 0; font-size: 11px; color: var(--fg); font-weight: 600; }
+tr.mes td { border: 0; border-top: 2px solid var(--fg); padding: 8px 8px 4px; font-weight: 800; font-size: 14px; text-transform: capitalize; background: var(--bg); }
+.dia { display: grid; }
+.fecha { font-size: 11px; color: var(--muted); padding: 2px 4px 0; white-space: nowrap; overflow: hidden; }
+.fecha b { color: var(--fg); font-weight: 600; }
+td.hoy { box-shadow: inset 0 0 0 2px var(--hoy); }
+td.hoy .fecha { color: var(--hoy); font-weight: 700; }
+.corto { display: none; }
+.n { display: flex; justify-content: space-between; align-items: baseline; padding: 1px 4px; font-family: var(--font-num); font-weight: 700; font-size: 15px; }
+.n i { font-style: normal; font-family: var(--font-display); font-size: 10px; font-weight: 600; }
+.n.m i { color: var(--accent); }
+.n.t i { color: var(--sun); }
+.n.espera b { color: var(--muted); font-weight: 500; }
+.n.c0 { background: var(--l0); } .n.c1 { background: var(--l1); } .n.c2 { background: var(--l2); } .n.c3 { background: var(--l3); } .n.c4 { background: var(--l4); }
+.n.c5 { background: var(--l5); } .n.c6 { background: var(--l6); } .n.c7 { background: var(--l7); } .n.c8 { background: var(--l8); } .n.c9 { background: var(--l9); }
+.n[class*=" c"] { color: var(--lfg); }
+.n[class*=" c"] i { color: var(--lfg); opacity: 0.8; }
+.n.same { outline: 2px solid var(--same); outline-offset: -2px; font-weight: 800; }
+.n.same b { text-decoration: underline; text-underline-offset: 2px; }
+.n b { font-weight: inherit; }
+td.vacio { background: var(--bg); }
+footer { font-size: 12px; color: var(--muted); }
+footer a { color: var(--accent); }
+.aviso { font-size: 13px; color: var(--sun); }
+@media (max-width: 520px) { thead th, tr.dias th { font-size: 10px; letter-spacing: 0; text-transform: none; } }
+@media (max-width: 480px) { .n { font-size: 13px; padding: 1px 2px; } .n i { font-size: 9px; } }
+@media (max-width: 390px) { .largo { display: none; } .corto { display: inline; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pick 3 Florida · fijos diarios</h1>
+
+  <div class="estado" id="estado">
+    <div class="ultimo">Cargando números…</div>
+  </div>
+
+  <div class="controls">
+    <label for="anio">Año <select id="anio"></select></label>
+    <label for="marcar">Marcar
+      <select id="marcar">
+        <option value="linea">Línea repetida en la semana</option>
+        <option value="fijo">Solo el mismo fijo repetido</option>
+      </select>
+    </label>
+    <label for="comparar">Comparar
+      <select id="comparar">
+        <option value="todo">Mañana y tarde juntas</option>
+        <option value="M">Mañana con mañana</option>
+        <option value="T">Tarde con tarde</option>
+      </select>
+    </label>
+  </div>
+  <div class="legend" id="leyenda"></div>
+
+  <div class="cal-box">
+    <table>
+      <thead><tr id="cabecera"></tr></thead>
+      <tbody id="cal"></tbody>
+    </table>
+  </div>
+
+  <footer>Los dos últimos números del Pick 3 (el fijo). <b>M</b> = mañana (1:30 pm), <b>T</b> = tarde (9:45 pm), hora de Florida. Datos: historial oficial de la <a href="https://floridalottery.com" target="_blank" rel="noopener">Lotería de Florida</a> y LotteryUSA para el mismo día. Se actualiza sola unos minutos después de cada sorteo.</footer>
+</div>
+
+<script>
+const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const DIAS_C = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const MES_C = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const nombreDia = i => `<span class="largo">${DIAS[i]}</span><span class="corto">${DIAS_C[i]}</span>`;
+const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const $ = id => document.getElementById(id);
+
+let DATA = {}, ACTUALIZADO = null, semanas = [];
+
+// Fecha y hora de Florida (los sorteos son a la 1:30 pm y 9:45 pm de Florida)
+function ahoraFlorida() {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })
+    .formatToParts(new Date()).map(x => [x.type, x.value]));
+  return { fecha: `${p.year}-${p.month}-${p.day}`, minutos: (+p.hour % 24) * 60 + +p.minute };
+}
+
+$("cabecera").innerHTML = DIAS.map((_, i) => `<th>${nombreDia(i)}</th>`).join("");
+
+function armarSemanas() {
+  const fechas = Object.keys(DATA).sort();
+  const hoy = ahoraFlorida().fecha;
+  const primero = new Date(fechas[0] + "T12:00:00");
+  let inicio = addDays(primero, -((primero.getDay() + 6) % 7));
+  const ultimo = fechas[fechas.length - 1] > hoy ? fechas[fechas.length - 1] : hoy;
+  const fin = new Date(ultimo + "T12:00:00");
+  semanas = [];
+  for (let l = inicio; l <= fin; l = addDays(l, 7)) {
+    const s = [0,1,2,3,4,5,6].map(i => addDays(l, i));
+    s.ref = s[3] < primero ? primero : s[3];
+    semanas.push(s);
+  }
+  semanas.reverse();
+  const anios = [...new Set(semanas.map(s => s.ref.getFullYear()))];
+  const previo = $("anio").value;
+  $("anio").innerHTML = `<option value="todos">Todos</option>` + anios.map(a => `<option value="${a}">${a}</option>`).join("");
+  if ([...$("anio").options].some(o => o.value === previo)) $("anio").value = previo;
+}
+
+function pintarEstado() {
+  const fechas = Object.keys(DATA).sort();
+  let txt = "";
+  for (let i = fechas.length - 1; i >= 0; i--) {
+    const r = DATA[fechas[i]];
+    if (r[0] || r[1]) {
+      const d = new Date(fechas[i] + "T12:00:00");
+      const dia = `${DIAS[(d.getDay() + 6) % 7]} ${d.getDate()} ${MES_C[d.getMonth()]}`;
+      txt = `<span>Último: <strong>${dia}</strong></span>` +
+        (r[0] ? `<span><span class="m">M</span> <b>${r[0].slice(1)}</b> <small>(${r[0]})</small></span>` : "") +
+        (r[1] ? `<span><span class="t">T</span> <b>${r[1].slice(1)}</b> <small>(${r[1]})</small></span>` : "");
+      break;
+    }
+  }
+  const { fecha, minutos } = ahoraFlorida();
+  const hoy = DATA[fecha] || [null, null];
+  let proximo;
+  if (!hoy[0]) proximo = minutos < 13 * 60 + 30 ? "hoy a la 1:30 pm (mañana)" : "mañana de hoy: esperando el número…";
+  else if (!hoy[1]) proximo = minutos < 21 * 60 + 45 ? "hoy a las 9:45 pm (tarde)" : "tarde de hoy: esperando el número…";
+  else proximo = "mañana a la 1:30 pm";
+  const act = ACTUALIZADO ? new Date(ACTUALIZADO).toLocaleString("es", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "—";
+  $("estado").innerHTML = `<div class="ultimo">${txt}</div>
+    <small>Próximo sorteo: ${proximo} · hora de Florida</small>
+    <div class="fila-btn"><small>Datos al ${act}</small><button type="button" id="refrescar">Actualizar ahora</button></div>
+    <div class="aviso" id="aviso" hidden></div>`;
+  $("refrescar").addEventListener("click", () => cargar(true));
+}
+
+function clasesNum(k, num, entra, porLinea, porFijo, marcar) {
+  const f = num.slice(1);
+  let c = "n " + k.toLowerCase();
+  if (entra) {
+    if (marcar === "linea" && porLinea[f[0]] > 1) c += " c" + f[0];
+    if (porFijo[f] > 1) c += " same";
+  }
+  return c;
+}
+
+function render() {
+  const anio = $("anio").value, marcar = $("marcar").value, comparar = $("comparar").value;
+  $("leyenda").innerHTML = marcar === "linea"
+    ? `<span>Mismo color = misma línea en la semana:</span>` +
+      [0,1,2,3,4,5,6,7,8,9].map(L => `<span class="chip" style="background:var(--l${L})">${L}0–${L}9</span>`).join("") +
+      `<span><span class="ring">08</span> mismo fijo repetido</span>`
+    : `<span><span class="ring">08</span> mismo fijo repetido en la semana</span>`;
+
+  const { fecha: hoy, minutos } = ahoraFlorida();
+  let html = "", mesPrevio = "";
+  semanas.filter(sem => anio === "todos" || String(sem.ref.getFullYear()) === anio).forEach(sem => {
+    const k = MESES[sem.ref.getMonth()] + " " + sem.ref.getFullYear();
+    if (k !== mesPrevio) {
+      html += `<tr class="mes"><td colspan="7">${k}</td></tr><tr class="dias">${DIAS.map((_, i) => `<th>${nombreDia(i)}</th>`).join("")}</tr>`;
+      mesPrevio = k;
+    }
+    const tiradas = [];
+    sem.forEach(d => {
+      const r = DATA[iso(d)];
+      if (!r) return;
+      if (r[0]) tiradas.push({ k: "M", f: r[0].slice(1) });
+      if (r[1]) tiradas.push({ k: "T", f: r[1].slice(1) });
+    });
+    const porLinea = {}, porFijo = {};
+    tiradas.filter(t => comparar === "todo" || t.k === comparar)
+      .forEach(t => { porLinea[t.f[0]] = (porLinea[t.f[0]] || 0) + 1; porFijo[t.f] = (porFijo[t.f] || 0) + 1; });
+    const entra = k => comparar === "todo" || comparar === k;
+
+    html += "<tr>" + sem.map((d, i) => {
+      const f = iso(d), r = DATA[f], esHoy = f === hoy;
+      const fecha = `<span class="fecha"><b>${DIAS_C[i]}</b> ${d.getDate()}${esHoy ? " · hoy" : ""}</span>`;
+      if (!r && f > hoy) return `<td class="vacio"><div class="dia">${fecha}</div></td>`;
+      const celda = (k, num, hora) => {
+        if (num) return `<span class="${clasesNum(k, num, entra(k), porLinea, porFijo, marcar)}" title="${k === "M" ? "Mañana" : "Tarde"} ${num}"><i>${k}</i><b>${num.slice(1)}</b></span>`;
+        const pendiente = f === hoy ? (minutos < hora ? "··" : "…") : "–";
+        return `<span class="n ${k.toLowerCase()} espera"><i>${k}</i><b>${pendiente}</b></span>`;
+      };
+      const v = r || [null, null];
+      return `<td class="${esHoy ? "hoy" : ""}"><div class="dia">${fecha}${celda("M", v[0], 13 * 60 + 30)}${celda("T", v[1], 21 * 60 + 45)}</div></td>`;
+    }).join("") + "</tr>";
+  });
+  $("cal").innerHTML = html;
+}
+
+function aplicar(json) {
+  DATA = json.sorteos;
+  ACTUALIZADO = json.actualizado;
+  armarSemanas();
+  pintarEstado();
+  render();
+}
+
+async function cargar(forzar) {
+  try {
+    const r = await fetch("datos.json" + (forzar ? "?t=" + Date.now() : ""), { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    aplicar(await r.json());
+  } catch (e) {
+    const a = $("aviso");
+    if (a) { a.hidden = false; a.textContent = "Sin conexión: se muestran los últimos números guardados."; }
+    else $("estado").innerHTML = `<div class="aviso">No se pudieron cargar los números. Revisa la conexión y vuelve a abrir la app.</div>`;
+  }
+}
+
+try {
+  const p = JSON.parse(localStorage.getItem("pick3-cal") || "{}");
+  if (p.marcar) $("marcar").value = p.marcar;
+  if (p.comparar) $("comparar").value = p.comparar;
+  if (p.anio) $("anio").innerHTML = `<option value="${p.anio}">${p.anio}</option>`;
+} catch (e) {}
+["anio", "marcar", "comparar"].forEach(id => $(id).addEventListener("change", () => {
+  try { localStorage.setItem("pick3-cal", JSON.stringify({ anio: $("anio").value, marcar: $("marcar").value, comparar: $("comparar").value })); } catch (e) {}
+  render();
+}));
+
+cargar(false);
+// Al volver a la app, y cada 5 minutos con la app abierta, mira si hay números nuevos
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") cargar(true); });
+setInterval(() => { if (document.visibilityState === "visible") cargar(true); }, 5 * 60 * 1000);
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>

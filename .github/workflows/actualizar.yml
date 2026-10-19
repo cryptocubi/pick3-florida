@@ -1,0 +1,63 @@
+# Baja los números nuevos del Pick 3 después de cada sorteo y publica la app en GitHub Pages.
+name: Actualizar números
+
+on:
+  schedule:
+    # Hora UTC. Mañana (1:30 pm Florida = 17:30/18:30 UTC según horario de verano o invierno)
+    - cron: "*/15 17-19 * * *"
+    # Tarde (9:45 pm Florida = 01:45/02:45 UTC)
+    - cron: "*/15 1-3 * * *"
+    # Mañana temprano: comprobar contra el historial oficial
+    - cron: "30 11,14 * * *"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: actualizar
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publicar.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar lector de PDF
+        run: which pdftotext || (sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils)
+
+      - name: Bajar números nuevos
+        id: datos
+        run: python3 actualizar.py
+
+      - name: Guardar números en el repositorio
+        if: steps.datos.outputs.cambio == 'true'
+        run: |
+          git config user.name "robot-pick3"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add datos.json
+          git commit -m "Números nuevos $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git push
+
+      - name: Preparar página
+        if: steps.datos.outputs.cambio == 'true' || github.event_name != 'schedule'
+        uses: actions/configure-pages@v5
+
+      - name: Empaquetar app
+        if: steps.datos.outputs.cambio == 'true' || github.event_name != 'schedule'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Publicar app
+        id: publicar
+        if: steps.datos.outputs.cambio == 'true' || github.event_name != 'schedule'
+        uses: actions/deploy-pages@v4
