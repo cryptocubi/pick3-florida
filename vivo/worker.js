@@ -1,15 +1,22 @@
 // Puente "en vivo" para la app Pick 3 Florida (Cloudflare Worker).
 // Lee los últimos sorteos de LotteryUSA (y Lottery.net si hace falta) en el momento
 // y se los da a la app, que desde su página no puede leer esos sitios directamente.
-// Respuesta: {"hora": "...", "sorteos": {"AAAA-MM-DD": ["mañana"|null, "tarde"|null]}}
+// Respuesta: {"hora": "...", "sorteos": {...Pick 3...}, "pick4": {...Pick 4...}}
+// cada juego: {"AAAA-MM-DD": ["mañana"|null, "tarde"|null]}
 
 const NAVEGADOR = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
-const USA = {
-  0: "https://www.lotteryusa.com/florida/midday-pick-3/year",
-  1: "https://www.lotteryusa.com/florida/pick-3/year",
+const JUEGOS = {
+  sorteos: {
+    cifras: 3, net: "pick-3",
+    usa: ["https://www.lotteryusa.com/florida/midday-pick-3/year", "https://www.lotteryusa.com/florida/pick-3/year"],
+  },
+  pick4: {
+    cifras: 4, net: "pick-4",
+    usa: ["https://www.lotteryusa.com/florida/midday-pick-4/year", "https://www.lotteryusa.com/florida/pick-4/year"],
+  },
 };
 const MESES = { Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06", Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12" };
-const DIAS = 14;      // cuántos días recientes devuelve
+const DIAS = 14;         // cuántos días recientes devuelve
 const GUARDA_MS = 20000; // no volver a preguntar a las fuentes antes de 20 s
 
 let guardado = null; // {cuando, cuerpo}
@@ -38,18 +45,21 @@ async function bajarConReintentos(url) {
   throw error;
 }
 
-async function lotteryUSA(sorteos) {
+const cifrasRe = (n, sep) => Array(n).fill(String.raw`(\d)`).join(sep);
+
+async function lotteryUSA(juego, sorteos) {
   const fallos = [];
-  await Promise.all(Object.entries(USA).map(async ([i, url]) => {
+  const patron = new RegExp(String.raw`^"\w+, (\w{3}) (\d+), (\d{4})","` + cifrasRe(juego.cifras, ", ") + '"');
+  await Promise.all(juego.usa.map(async (url, i) => {
     let html;
     try { html = await bajarConReintentos(url); } catch (e) { fallos.push(e.message); return; }
     const m = html.match(/data-exportMenu-csv-value="([^"]*)"/);
-    if (!m) throw new Error("LotteryUSA cambió su página");
+    if (!m) { fallos.push("LotteryUSA cambió su página"); return; }
     for (const linea of quitarEntidades(m[1]).trim().split("\n").slice(1)) {
-      const x = linea.match(/^"\w+, (\w{3}) (\d+), (\d{4})","(\d), (\d), (\d)"/);
+      const x = linea.match(patron);
       if (!x) continue;
       const fecha = `${x[3]}-${MESES[x[1]]}-${x[2].padStart(2, "0")}`;
-      (sorteos[fecha] ??= [null, null])[+i] = x[4] + x[5] + x[6];
+      (sorteos[fecha] ??= [null, null])[i] = x.slice(4).join("");
     }
   }));
   if (fallos.length) throw new Error(fallos.join("; "));
@@ -62,33 +72,35 @@ function fechaFlorida(diasAtras) {
   return { iso: `${p.year}-${p.month}-${p.day}`, url: `${p.month}-${p.day}-${p.year}` };
 }
 
-async function lotteryNet(sorteos) {
-  // Solo hoy y ayer (hora de Florida)
+async function lotteryNet(juego, sorteos) {
+  // Solo hoy y ayer (hora de Florida); el número viene seguido del Fireball
   await Promise.all([0, 1].map(async atras => {
     const f = fechaFlorida(atras);
     let html;
-    try { html = await bajar(`https://www.lottery.net/florida/pick-3/numbers/${f.url}`); } catch { return; }
+    try { html = await bajar(`https://www.lottery.net/florida/${juego.net}/numbers/${f.url}`); } catch { return; }
     const texto = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
     [["Midday", 0], ["Evening", 1]].forEach(([nombre, i]) => {
-      const x = texto.match(new RegExp(nombre + " \\d+:\\d+ [AP]M (\\d) (\\d) (\\d) (\\d)\\b"));
-      if (x) (sorteos[f.iso] ??= [null, null])[i] ??= x[1] + x[2] + x[3];
+      const x = texto.match(new RegExp(nombre + String.raw` \d+:\d+ [AP]M ` + cifrasRe(juego.cifras + 1, " ") + String.raw`\b`));
+      if (x) (sorteos[f.iso] ??= [null, null])[i] ??= x.slice(1, juego.cifras + 1).join("");
     });
   }));
 }
 
-async function leer() {
-  const sorteos = {}, fallos = [];
-  await lotteryUSA(sorteos).catch(e => fallos.push("LotteryUSA: " + e.message));
+async function leerJuego(clave, juego, fallos) {
+  const sorteos = {};
+  await lotteryUSA(juego, sorteos).catch(e => fallos.push(`${clave} LotteryUSA: ${e.message}`));
   // Lottery.net rellena lo que LotteryUSA aún no tenga de hoy o ayer
   const hoy = fechaFlorida(0).iso, ayer = fechaFlorida(1).iso;
   const falta = [hoy, ayer].some(f => !sorteos[f] || !sorteos[f][0] || !sorteos[f][1]);
-  if (falta) await lotteryNet(sorteos).catch(e => fallos.push("Lottery.net: " + e.message));
+  if (falta) await lotteryNet(juego, sorteos).catch(e => fallos.push(`${clave} Lottery.net: ${e.message}`));
   const recientes = Object.keys(sorteos).sort().slice(-DIAS);
-  return {
-    hora: new Date().toISOString(),
-    sorteos: Object.fromEntries(recientes.map(f => [f, sorteos[f]])),
-    ...(fallos.length ? { fallos } : {}),
-  };
+  return Object.fromEntries(recientes.map(f => [f, sorteos[f]]));
+}
+
+async function leer() {
+  const fallos = [];
+  const [sorteos, pick4] = await Promise.all(Object.entries(JUEGOS).map(([c, j]) => leerJuego(c, j, fallos)));
+  return { hora: new Date().toISOString(), sorteos, pick4, ...(fallos.length ? { fallos } : {}) };
 }
 
 export default {

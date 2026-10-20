@@ -4,29 +4,37 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pick 3 Florida</title>
-<meta name="description" content="Fijos del Pick 3 de Florida, mañana y tarde, en calendario de lunes a domingo.">
-<meta name="theme-color" content="#0f766e">
+<meta name="description" content="Fijo, centena y corridos del Pick 3 y Pick 4 de Florida en vivo, calendario, atrasados, más salen y charada.">
+<meta name="theme-color" content="#1e1b4b">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icono-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icono-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Pick 3">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=JetBrains+Mono:wght@500;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap">
 <style>
-/* Calendario corrido: cada fila = una semana lunes–domingo, cada celda = un día con el fijo de mañana y de tarde */
+/* App de una mano: barra arriba con fecha y estado en vivo, cuatro pantallas (Hoy, Calendario, Análisis, Charada) y pestañas abajo */
 :root {
-  --bg: #f2f5f4;
+  --bg: #eef1f8;
   --surface: #ffffff;
-  --fg: #13201e;
-  --muted: #66746f;
-  --line: #cfdad6;
-  --accent: #0f766e;
-  --sun: #c2410c;
+  --surface-2: #f4f6fc;
+  --fg: #121733;
+  --muted: #5e6687;
+  --line: #d9deee;
+  --accent: #4f46e5;
+  --accent-soft: #e6e6ff;
+  --sol: #c46f00;
+  --sol-soft: #fff2d9;
+  --luna: #4338ca;
+  --luna-soft: #e4e6ff;
+  --vivo: #dc2626;
+  --cielo-1: #312e81;
+  --cielo-2: #6d28d9;
   --same: #111111;
-  --hoy: #0f766e;
+  --hoy: #4f46e5;
   --l0: #fde047; --l1: #86efac; --l2: #7dd3fc; --l3: #f9a8d4; --l4: #fdba74;
   --l5: #c4b5fd; --l6: #5eead4; --l7: #fca5a5; --l8: #bef264; --l9: #a5b4fc;
   --lfg: #111a18;
@@ -36,8 +44,9 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0d1514; --surface: #141f1d; --fg: #e3edeb; --muted: #93a5a1; --line: #2c3c39;
-    --accent: #2dd4bf; --sun: #fb923c; --same: #ffffff; --hoy: #2dd4bf;
+    --bg: #0b1020; --surface: #141a2e; --surface-2: #1b2240; --fg: #e8ecfa; --muted: #9aa3c7; --line: #2a3256;
+    --accent: #8b8cff; --accent-soft: #24275a; --sol: #fbbf24; --sol-soft: #3a2a0b; --luna: #a5b4fc; --luna-soft: #222a5c;
+    --vivo: #f87171; --cielo-1: #1e1b4b; --cielo-2: #4c1d95; --same: #ffffff; --hoy: #8b8cff;
     --l0: #a16207; --l1: #15803d; --l2: #0369a1; --l3: #be185d; --l4: #c2410c;
     --l5: #6d28d9; --l6: #0f766e; --l7: #b91c1c; --l8: #4d7c0f; --l9: #4338ca;
     --lfg: #ffffff; color-scheme: dark;
@@ -46,39 +55,126 @@
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
-  margin: 0;
-  background: var(--bg); color: var(--fg);
+  margin: 0; background: var(--bg); color: var(--fg);
   font-family: var(--font-display); font-size: 15px; line-height: 1.45;
-  padding-left: max(12px, env(safe-area-inset-left, 0px));
-  padding-right: max(12px, env(safe-area-inset-right, 0px));
-  padding-top: max(16px, env(safe-area-inset-top, 0px));
-  padding-bottom: max(40px, env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
 }
-.wrap { max-width: 900px; margin: 0 auto; display: grid; gap: 14px; }
-h1 { font-size: clamp(22px, 5vw, 32px); font-weight: 800; margin: 0; letter-spacing: -0.02em; }
-.estado { display: grid; gap: 6px; padding: 12px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
-.estado .ultimo { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
-.estado .ultimo b { font-family: var(--font-num); font-size: 22px; }
-.estado .ultimo .m { color: var(--accent); font-weight: 700; }
-.estado .ultimo .t { color: var(--sun); font-weight: 700; }
-.estado small { color: var(--muted); font-size: 12px; }
-.fila-btn { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-button { font: inherit; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
-button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.controls { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
-.controls label { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
-select { font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); max-width: 100%; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+/* Barra de arriba */
+.barra {
+  position: sticky; top: 0; z-index: 5;
+  background: linear-gradient(135deg, var(--cielo-1), var(--cielo-2));
+  color: #fff;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
+}
+.barra-in { max-width: 900px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+.marca { display: grid; line-height: 1.15; min-width: 0; }
+.marca b { font-size: 19px; font-weight: 900; letter-spacing: -0.01em; }
+.marca span { font-size: 12px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pill { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.25); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; background: #a3e635; }
+.pill.activo i { background: #f87171; animation: latido 1.6s ease-in-out infinite; }
+.btn-ico { background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.25); color: #fff; border-radius: 10px; width: 36px; height: 36px; display: grid; place-items: center; flex: none; }
+.btn-ico svg { width: 18px; height: 18px; }
+.btn-ico.girando svg { animation: girar 0.8s linear infinite; }
+@keyframes latido { 50% { opacity: 0.35; } }
+@keyframes girar { to { transform: rotate(360deg); } }
+
+.vista {
+  max-width: 900px; margin: 0 auto; display: grid; gap: 14px;
+  padding: 14px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px));
+}
+h2 { font-size: 18px; margin: 0; font-weight: 800; }
+h3 { font-size: 15px; margin: 0; font-weight: 800; }
+.nota { font-size: 12px; color: var(--muted); margin: 0; }
+.tarjeta { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+
+/* Bolas */
+.bolas { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.bola {
+  width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  font: 800 27px/1 var(--font-num); color: #1d2340;
+  background: radial-gradient(circle at 33% 28%, #ffffff 0 16%, #eef2ff 38%, #b8c3ec 100%);
+  box-shadow: inset 0 -5px 10px rgba(30,40,100,0.22), 0 6px 14px rgba(10,15,50,0.22);
+}
+.bola.cen { color: #fff; background: radial-gradient(circle at 33% 28%, #a5b4fc 0 10%, #4f46e5 45%, #1e1b4b 100%); }
+.bola.par { width: 64px; border-radius: 32px; font-size: 24px; }
+.bola.vacia { color: #8a93b8; }
+.bola.mini { width: 40px; height: 40px; font-size: 17px; }
+.bola.mini.par { width: 46px; }
+.sep-fijo { width: 1px; height: 40px; background: var(--line); margin: 0 2px; }
+
+/* Hoy */
+.sorteos { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.sorteo { position: relative; overflow: hidden; }
+.sorteo::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 5px; background: var(--tono); }
+.sorteo.m { --tono: var(--sol); --tono-soft: var(--sol-soft); }
+.sorteo.t { --tono: var(--luna); --tono-soft: var(--luna-soft); }
+.cab { display: flex; align-items: center; gap: 10px; }
+.cab .ico { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--tono-soft); color: var(--tono); flex: none; }
+.cab .ico svg { width: 22px; height: 22px; }
+.cab small { display: block; color: var(--muted); font-size: 12px; }
+.estado { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--tono); background: var(--tono-soft); border-radius: 999px; padding: 4px 10px; text-align: right; }
+.bloque { display: grid; gap: 8px; justify-items: center; padding: 10px 0 2px; border-top: 1px dashed var(--line); }
+.etq { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.significado { font-size: 13px; color: var(--muted); text-align: center; }
+.significado b { color: var(--fg); font-family: var(--font-num); }
+.ultimos { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ultimos th { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.ultimos td { padding: 8px 4px; border-bottom: 1px solid var(--line); font-size: 13px; vertical-align: middle; }
+.ultimos tr:last-child td { border-bottom: 0; }
+.ultimos .num { font-family: var(--font-num); font-weight: 800; font-size: 16px; }
+.ultimos .cor { font-family: var(--font-num); color: var(--muted); font-size: 12px; white-space: nowrap; }
+.ultimos .cm { color: var(--sol); font-weight: 800; font-size: 11px; }
+.ultimos .ct { color: var(--luna); font-weight: 800; font-size: 11px; }
+
+/* Botones de elegir */
+.seg { display: flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
+.seg button { flex: 1; border: 0; background: transparent; border-radius: 9px; padding: 8px 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 4px rgba(10,15,50,0.15); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chips button { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.chips button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.fila { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.fila label { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+select, input[type="date"], input[type="search"] { padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); max-width: 100%; }
+.btn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 7px 12px; font-size: 13px; font-weight: 700; }
+
+/* Listas de análisis */
+.lista { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.lista li { display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; min-width: 0; }
+.lista li.top { border-color: var(--accent); }
+.lista .info { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.lista .info b { font-size: 13px; }
+.lista .info small { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.medidor { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.medidor i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.anios { display: grid; gap: 8px; }
+.anio { display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: center; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.anio > b { font-size: 18px; font-weight: 900; }
+.anio .lado { display: flex; gap: 6px 14px; flex-wrap: wrap; align-items: center; }
+.anio .grupo { display: flex; gap: 6px; align-items: center; }
+.anio .grupo > span:first-child { font-size: 11px; font-weight: 800; width: 14px; }
+
+/* Charada */
+.charada { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.charada li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 2px; }
+.charada li b { font: 800 22px/1 var(--font-num); color: var(--accent); }
+.charada li span { font-weight: 700; font-size: 14px; }
+.charada li small { font-size: 11px; color: var(--muted); }
+
+/* Calendario */
 .legend { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 12px; color: var(--muted); align-items: center; }
 .legend .chip { font-family: var(--font-num); font-weight: 700; padding: 1px 6px; border-radius: 3px; color: var(--lfg); }
 .legend .ring { font-family: var(--font-num); font-weight: 800; padding: 0 5px; outline: 2px solid var(--same); outline-offset: -2px; border-radius: 3px; color: var(--fg); }
-.cal-box { overflow: clip; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
-table { border-collapse: collapse; width: 100%; table-layout: fixed; font-variant-numeric: tabular-nums; }
-thead th {
-  position: sticky; top: 0; z-index: 1; background: var(--surface);
-  font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600;
-  padding: 8px 0; border-bottom: 2px solid var(--line);
-}
-td { border: 1px solid var(--line); padding: 0; vertical-align: top; }
+.cal-box { overflow: clip; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.cal-box table { border-collapse: collapse; width: 100%; table-layout: fixed; font-variant-numeric: tabular-nums; }
+.cal-box thead th { background: var(--surface); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; padding: 8px 0; border-bottom: 2px solid var(--line); }
+.cal-box td { border: 1px solid var(--line); padding: 0; vertical-align: top; }
 tr.dias th { background: var(--bg); border-bottom: 1px solid var(--line); padding: 4px 0; font-size: 11px; color: var(--fg); font-weight: 600; }
 tr.mes td { border: 0; border-top: 2px solid var(--fg); padding: 8px 8px 4px; font-weight: 800; font-size: 14px; text-transform: capitalize; background: var(--bg); }
 .dia { display: grid; }
@@ -89,8 +185,8 @@ td.hoy .fecha { color: var(--hoy); font-weight: 700; }
 .corto { display: none; }
 .n { display: flex; justify-content: space-between; align-items: baseline; padding: 1px 4px; font-family: var(--font-num); font-weight: 700; font-size: 15px; }
 .n i { font-style: normal; font-family: var(--font-display); font-size: 10px; font-weight: 600; }
-.n.m i { color: var(--accent); }
-.n.t i { color: var(--sun); }
+.n.m i { color: var(--sol); }
+.n.t i { color: var(--luna); }
 .n.espera b { color: var(--muted); font-weight: 500; }
 .n.c0 { background: var(--l0); } .n.c1 { background: var(--l1); } .n.c2 { background: var(--l2); } .n.c3 { background: var(--l3); } .n.c4 { background: var(--l4); }
 .n.c5 { background: var(--l5); } .n.c6 { background: var(--l6); } .n.c7 { background: var(--l7); } .n.c8 { background: var(--l8); } .n.c9 { background: var(--l9); }
@@ -100,27 +196,52 @@ td.hoy .fecha { color: var(--hoy); font-weight: 700; }
 .n.same b { text-decoration: underline; text-underline-offset: 2px; }
 .n b { font-weight: inherit; }
 td.vacio { background: var(--bg); }
-footer { font-size: 12px; color: var(--muted); }
-footer a { color: var(--accent); }
-.aviso { font-size: 13px; color: var(--sun); }
-.vivo { font-size: 12px; font-weight: 800; color: var(--muted); letter-spacing: 0.03em; }
-.vivo.activo { color: #dc2626; animation: latido 1.6s ease-in-out infinite; }
-@keyframes latido { 50% { opacity: 0.35; } }
-@media (prefers-reduced-motion: reduce) { .vivo.activo { animation: none; } }
-@media (max-width: 520px) { thead th, tr.dias th { font-size: 10px; letter-spacing: 0; text-transform: none; } }
-@media (max-width: 480px) { .n { font-size: 13px; padding: 1px 2px; } .n i { font-size: 9px; } }
+
+/* Pestañas de abajo */
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+}
+.tabs-in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.tabs a { display: grid; justify-items: center; gap: 2px; padding: 6px 0; border-radius: 12px; color: var(--muted); text-decoration: none; font-size: 11px; font-weight: 700; }
+.tabs a svg { width: 22px; height: 22px; }
+.tabs a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+.aviso { font-size: 13px; color: var(--vivo); }
+
+@media (max-width: 520px) { .cal-box thead th, tr.dias th { font-size: 10px; letter-spacing: 0; text-transform: none; } }
+@media (max-width: 480px) {
+  .n { font-size: 13px; padding: 1px 2px; } .n i { font-size: 9px; }
+  .bola { width: 52px; height: 52px; font-size: 24px; } .bola.par { width: 58px; font-size: 22px; }
+}
 @media (max-width: 390px) { .largo { display: none; } .corto { display: inline; } }
+@media (prefers-reduced-motion: reduce) { .pill.activo i, .btn-ico.girando svg { animation: none; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Pick 3 Florida · fijos diarios</h1>
-
-  <div class="estado" id="estado">
-    <div class="ultimo">Cargando números…</div>
+<header class="barra">
+  <div class="barra-in">
+    <div class="marca"><b>Pick 3 Florida</b><span id="fechaHoy">Cargando…</span></div>
+    <span class="pill" id="pillVivo"><i></i><span>Cargando</span></span>
+    <button type="button" class="btn-ico" id="refrescar" aria-label="Buscar números nuevos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+    </button>
   </div>
+</header>
 
-  <div class="controls">
+<!-- HOY -->
+<main class="vista" id="v-hoy">
+  <div class="sorteos" id="sorteosHoy"></div>
+  <section class="tarjeta">
+    <h2>Últimos días</h2>
+    <div style="overflow-x:auto"><table class="ultimos" id="ultimos"></table></div>
+  </section>
+  <p class="nota">Fijo = las dos últimas cifras del Pick 3. Centena = la primera. Corridos = las dos parejas del Pick 4. Hora de Florida.</p>
+</main>
+
+<!-- CALENDARIO -->
+<main class="vista" id="v-calendario" hidden>
+  <div class="fila">
     <label for="anio">Año <select id="anio"></select></label>
     <label for="marcar">Marcar
       <select id="marcar">
@@ -138,16 +259,77 @@ footer a { color: var(--accent); }
     </label>
   </div>
   <div class="legend" id="leyenda"></div>
-
   <div class="cal-box">
     <table>
       <thead><tr id="cabecera"></tr></thead>
       <tbody id="cal"></tbody>
     </table>
   </div>
+</main>
 
-  <footer>Los dos últimos números del Pick 3 (el fijo). <b>M</b> = mañana (1:30 pm), <b>T</b> = tarde (9:45 pm), hora de Florida. Datos: historial oficial de la <a href="https://floridalottery.com" target="_blank" rel="noopener">Lotería de Florida</a> y LotteryUSA para el mismo día. Se actualiza sola unos minutos después de cada sorteo.</footer>
-</div>
+<!-- ANÁLISIS -->
+<main class="vista" id="v-analisis" hidden>
+  <div class="seg" id="modo" role="group" aria-label="Sorteo">
+    <button type="button" data-v="G" aria-pressed="true">General</button>
+    <button type="button" data-v="M" aria-pressed="false">Mediodía</button>
+    <button type="button" data-v="T" aria-pressed="false">Noche</button>
+  </div>
+
+  <section class="tarjeta">
+    <div><h2>Atrasados</h2><p class="nota">Cuántos días lleva sin salir cada uno (solo fijo, sin corridos).</p></div>
+    <div class="chips" id="catAtr" role="group" aria-label="Qué mirar"></div>
+    <ul class="lista" id="listaAtr"></ul>
+    <button type="button" class="btn" id="verTodosAtr" hidden>Ver los 100</button>
+  </section>
+
+  <section class="tarjeta">
+    <div class="fila" style="justify-content:space-between">
+      <div><h2>Más salen</h2><p class="nota">Cuántas veces salió cada uno.</p></div>
+      <label for="periodo">En los últimos
+        <select id="periodo">
+          <option value="7">7 días</option>
+          <option value="30" selected>30 días</option>
+          <option value="90">90 días</option>
+          <option value="365">365 días</option>
+        </select>
+      </label>
+    </div>
+    <div class="chips" id="catMas" role="group" aria-label="Qué mirar"></div>
+    <ul class="lista" id="listaMas"></ul>
+  </section>
+
+  <section class="tarjeta">
+    <div><h2>Un día como hoy</h2><p class="nota" id="diaComoHoyNota"></p></div>
+    <div class="anios" id="anios"></div>
+  </section>
+
+  <section class="tarjeta">
+    <h2>Buscar una fecha</h2>
+    <div class="fila"><label for="buscarFecha">Día <input type="date" id="buscarFecha"></label></div>
+    <div class="anios" id="resultadoFecha"></div>
+  </section>
+
+  <p class="nota">Esto cuenta lo que ya salió. No adivina el próximo número: cada sorteo es al azar y todos los números tienen la misma probabilidad.</p>
+</main>
+
+<!-- CHARADA -->
+<main class="vista" id="v-charada" hidden>
+  <section class="tarjeta">
+    <h2>Charada cubana</h2>
+    <input type="search" id="buscarCharada" placeholder="Busca un número o una palabra (ej. 18 o pescado)" aria-label="Buscar en la charada">
+    <p class="nota">Debajo de cada número: cuántos días lleva sin salir de fijo (mediodía o noche).</p>
+  </section>
+  <ul class="charada" id="listaCharada"></ul>
+</main>
+
+<nav class="tabs" aria-label="Pantallas">
+  <div class="tabs-in">
+    <a href="#hoy" data-v="hoy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2"/></svg>Hoy</a>
+    <a href="#calendario" data-v="calendario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Calendario</a>
+    <a href="#analisis" data-v="analisis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>Análisis</a>
+    <a href="#charada" data-v="charada"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5h10.5a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h10.5"/></svg>Charada</a>
+  </div>
+</nav>
 
 <script>
 const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
@@ -157,12 +339,30 @@ const MES_C = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov"
 const nombreDia = i => `<span class="largo">${DIAS[i]}</span><span class="corto">${DIAS_C[i]}</span>`;
 const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const fechaDe = f => new Date(f + "T12:00:00");
+const diasEntre = (a, b) => Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 864e5);
 const $ = id => document.getElementById(id);
+
+// Charada cubana: [significado principal, otro significado]; el 00 es el 100
+const CHARADA = [["Inodoro","Huevos"],["Caballo"],["Mariposa"],["Marinero","Niño chiquito"],["Gato"],["Monja","Mujer buena"],["Jicotea"],["Caracol"],["Muerto"],["Elefante"],
+  ["Pescado grande"],["Gallo"],["Ramera"],["Pavo real","Chulo"],["Cementerio"],["Perro"],["Toro"],["San Lázaro"],["Pescado chico"],["Lombriz"],
+  ["Gato fino","Tibor"],["Majá"],["Sapo"],["Vapor"],["Paloma"],["Piedra fina"],["Anguila"],["Avispa"],["Chivo"],["Ratón"],
+  ["Camarón"],["Venado"],["Cochino"],["Tiñosa"],["Mono"],["Araña"],["Cachimba"],["Bruja"],["Macao","Dinero"],["Conejo","Culebra"],
+  ["Cura"],["Lagartija"],["Pato"],["Alacrán"],["Año del cuero"],["Tiburón"],["Guagua"],["Pájaro"],["Cucaracha"],["Borracho"],
+  ["Policía"],["Soldado"],["Bicicleta"],["Luz eléctrica"],["Flores"],["Cangrejo"],["Merengue","Gallina sacada"],["Cama"],["Retrato"],["Loco"],
+  ["Payaso"],["Caballo grande"],["Matrimonio"],["Asesino"],["Muerto grande","Muerto vivo"],["Comida"],["Pareja de yeguas","Tarro"],["Puñalada"],["Cementerio"],["Pozo"],
+  ["Coco"],["Río"],["Buey"],["Maleta"],["Papalote"],["Corbata"],["Bailarina"],["Muletas de San Lázaro"],["Sarcófago","Ataúd"],["Tren de carga"],
+  ["Médico viejo"],["Teatro"],["Madre"],["Tragedia"],["Sangre"],["Espejo"],["Tijeras"],["Plátano"],["Espejuelos","Miguel Mariano"],["Mucha agua"],
+  ["Viejo"],["Alpargata"],["Puerco grande"],["Sortija"],["Machete"],["Guerra","Perro grande"],["Zapato"],["Mosquito"],["Piano"],["Serrucho"]];
+const charada = dd => CHARADA[+dd][0];
 
 // Puente en vivo (Cloudflare Worker): trae el número minutos después del sorteo
 const VIVO_URL = "https://pick3-vivo.martinezfuentesesteban8.workers.dev/";
+const HORA_M = 13 * 60 + 30, HORA_T = 21 * 60 + 45;
 
-let BASE = {}, VIVO = {}, DATA = {}, ACTUALIZADO = null, VIVO_HORA = null, semanas = [];
+let BASE = {}, BASE4 = {}, VIVO = {}, VIVO4 = {}, DATA = {}, DATA4 = {}, FECHAS = [];
+let ACTUALIZADO = null, VIVO_HORA = null, semanas = [];
+const PREF = { vista: "hoy", modo: "G", catAtr: "fijo", catMas: "fijo", todosAtr: false };
 
 // Fecha y hora de Florida (los sorteos son a la 1:30 pm y 9:45 pm de Florida)
 function ahoraFlorida() {
@@ -170,16 +370,152 @@ function ahoraFlorida() {
     .formatToParts(new Date()).map(x => [x.type, x.value]));
   return { fecha: `${p.year}-${p.month}-${p.day}`, minutos: (+p.hour % 24) * 60 + +p.minute };
 }
+function enHoraDeSorteo() {
+  const m = ahoraFlorida().minutos;
+  return (m >= HORA_M - 5 && m <= 14 * 60 + 45) || (m >= HORA_T - 5 && m <= 23 * 60);
+}
+const textoFecha = f => { const d = fechaDe(f); return `${DIAS[(d.getDay() + 6) % 7]} ${d.getDate()} de ${MESES[d.getMonth()]}`; };
+const textoCorto = f => { const d = fechaDe(f); return `${DIAS_C[(d.getDay() + 6) % 7]} ${d.getDate()} ${MES_C[d.getMonth()]}`; };
+const haceDias = n => n === 0 ? "hoy" : n === 1 ? "ayer" : `hace ${n} días`;
+const faltan = min => { const h = Math.floor(min / 60), m = min % 60; return h ? `faltan ${h} h ${m} min` : `faltan ${m} min`; };
+const ICO_SOL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>`;
+const ICO_LUNA = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/></svg>`;
 
+/* ---------- HOY ---------- */
+function bolasFijo(n3) {
+  if (!n3) return `<div class="bolas"><span class="bola cen vacia">?</span><span class="bola vacia">?</span><span class="bola vacia">?</span></div>`;
+  return `<div class="bolas"><span class="bola cen" title="Centena">${n3[0]}</span><span class="bola">${n3[1]}</span><span class="bola">${n3[2]}</span></div>`;
+}
+function bolasCorridos(n4) {
+  if (!n4) return `<div class="bolas"><span class="bola par vacia">??</span><span class="bola par vacia">??</span></div>`;
+  return `<div class="bolas"><span class="bola par">${n4.slice(0, 2)}</span><span class="bola par">${n4.slice(2)}</span></div>`;
+}
+function pintarHoy() {
+  const { fecha: hoy, minutos } = ahoraFlorida();
+  const r3 = DATA[hoy] || [null, null], r4 = DATA4[hoy] || [null, null];
+  $("sorteosHoy").innerHTML = [["m", "Mediodía", "1:30 pm", ICO_SOL, HORA_M], ["t", "Noche", "9:45 pm", ICO_LUNA, HORA_T]].map(([c, nombre, hora, ico, min], i) => {
+    const n3 = r3[i], n4 = r4[i];
+    const estado = n3 ? "Ya salió" : minutos < min ? faltan(min - minutos) : "Esperando…";
+    const fijo = n3 ? n3.slice(1) : null;
+    return `<section class="tarjeta sorteo ${c}">
+      <div class="cab"><span class="ico">${ico}</span><div><h2>${nombre}</h2><small>${hora} · hora de Florida</small></div><span class="estado">${estado}</span></div>
+      <div class="bloque"><span class="etq">Fijo${n3 ? " " + fijo : ""}</span>${bolasFijo(n3)}
+        <span class="significado">${n3 ? `<b>${fijo}</b> ${charada(fijo)} · centena <b>${n3[0]}</b>` : `Sale ${hora === "1:30 pm" ? "a la" : "a las"} ${hora}`}</span></div>
+      <div class="bloque"><span class="etq">Corridos</span>${bolasCorridos(n4)}
+        <span class="significado">${n4 ? `<b>${n4.slice(0, 2)}</b> ${charada(n4.slice(0, 2))} · <b>${n4.slice(2)}</b> ${charada(n4.slice(2))}` : "Del Pick 4 del mismo sorteo"}</span></div>
+    </section>`;
+  }).join("");
+
+  const filas = FECHAS.slice(-8).reverse().map(f => {
+    const a = DATA[f] || [], b = DATA4[f] || [];
+    const lado = (n3, n4) => n3 ? `<span class="num">${n3.slice(1)}</span> <span class="cor">${n3[0]} · ${n4 ? n4.slice(0, 2) + " " + n4.slice(2) : "–"}</span>` : `<span class="cor">${f === hoy ? "pendiente" : "–"}</span>`;
+    return `<tr><td>${textoCorto(f)}</td><td>${lado(a[0], b[0])}</td><td>${lado(a[1], b[1])}</td></tr>`;
+  }).join("");
+  $("ultimos").innerHTML = `<thead><tr><th>Día</th><th><span class="cm">☀</span> Mediodía</th><th><span class="ct">☾</span> Noche</th></tr></thead><tbody>${filas}</tbody>`;
+}
+
+/* ---------- ANÁLISIS ---------- */
+const DIG = ["0","1","2","3","4","5","6","7","8","9"];
+const CATS = {
+  fijo: { nombre: "Fijos", claves: Array.from({ length: 100 }, (_, i) => String(i).padStart(2, "0")), de: n => n.slice(1) },
+  decena: { nombre: "Decenas", claves: DIG, de: n => n[1], etiqueta: d => `${d}0–${d}9` },
+  terminal: { nombre: "Terminales", claves: DIG, de: n => n[2], etiqueta: d => `x${d}` },
+  centena: { nombre: "Centenas", claves: DIG, de: n => n[0], etiqueta: d => `${d}xx` },
+  doble: { nombre: "Dobles", claves: DIG.map(d => d + d), de: n => n[1] === n[2] ? n.slice(1) : null },
+};
+function tiradas(modo) {
+  const out = [];
+  for (const f of FECHAS) {
+    const r = DATA[f];
+    if (modo !== "T" && r[0]) out.push({ f, n: r[0] });
+    if (modo !== "M" && r[1]) out.push({ f, n: r[1] });
+  }
+  return out;
+}
+function atrasados(cat, modo) {
+  const c = CATS[cat], ultimo = {}, hoy = ahoraFlorida().fecha;
+  for (const t of tiradas(modo)) { const k = c.de(t.n); if (k !== null) ultimo[k] = t.f; }
+  const inicio = FECHAS[0];
+  return c.claves.map(k => ({ k, dias: ultimo[k] ? diasEntre(ultimo[k], hoy) : null, nunca: !ultimo[k], max: diasEntre(inicio, hoy) }))
+    .sort((a, b) => (b.dias ?? 1e9) - (a.dias ?? 1e9) || a.k.localeCompare(b.k));
+}
+function masSalen(cat, modo, nd) {
+  const c = CATS[cat], cuenta = Object.fromEntries(c.claves.map(k => [k, 0]));
+  const desde = iso(addDays(fechaDe(ahoraFlorida().fecha), -(nd - 1)));
+  for (const t of tiradas(modo)) { if (t.f < desde) continue; const k = c.de(t.n); if (k !== null) cuenta[k]++; }
+  return c.claves.map(k => ({ k, veces: cuenta[k] })).sort((a, b) => b.veces - a.veces || a.k.localeCompare(b.k));
+}
+function chipsCats(id, actual, sinDobles) {
+  $(id).innerHTML = Object.entries(CATS).filter(([k]) => !(sinDobles && k === "doble"))
+    .map(([k, c]) => `<button type="button" data-v="${k}" aria-pressed="${k === actual}">${c.nombre}</button>`).join("");
+}
+function itemLista(cat, k, principal, secundario, pct, top) {
+  const c = CATS[cat];
+  const bola = cat === "fijo" || cat === "doble" ? `<span class="bola mini">${k}</span>` : `<span class="bola mini${cat === "centena" ? " cen" : ""}">${k}</span>`;
+  const sub = cat === "fijo" || cat === "doble" ? charada(k) : c.etiqueta ? c.etiqueta(k) : "";
+  return `<li class="${top ? "top" : ""}">${bola}<div class="info"><b>${principal}</b><small>${secundario ? secundario + " · " : ""}${sub}</small><span class="medidor"><i style="width:${Math.max(4, pct)}%"></i></span></div></li>`;
+}
+function pintarAnalisis() {
+  const modo = PREF.modo;
+  document.querySelectorAll("#modo button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === modo));
+  chipsCats("catAtr", PREF.catAtr);
+  chipsCats("catMas", PREF.catMas, true);
+
+  const atr = atrasados(PREF.catAtr, modo);
+  const muchos = PREF.catAtr === "fijo";
+  const mostrar = muchos && !PREF.todosAtr ? atr.slice(0, 12) : atr;
+  const maxD = Math.max(1, ...atr.map(x => x.dias ?? x.max));
+  $("listaAtr").innerHTML = mostrar.map((x, i) => itemLista(PREF.catAtr, x.k,
+    x.nunca ? `+${x.max} días` : x.dias < 2 ? haceDias(x.dias) : `${x.dias} días`, x.nunca || x.dias >= 2 ? "sin salir" : "", ((x.dias ?? x.max) / maxD) * 100, i < 3)).join("");
+  $("verTodosAtr").hidden = !muchos;
+  $("verTodosAtr").textContent = PREF.todosAtr ? "Ver solo los 12 más atrasados" : "Ver los 100";
+
+  const nd = +$("periodo").value;
+  const mas = masSalen(PREF.catMas, modo, nd);
+  const lista = PREF.catMas === "fijo" ? mas.slice(0, 12) : mas;
+  const maxV = Math.max(1, ...mas.map(x => x.veces));
+  $("listaMas").innerHTML = lista.map((x, i) => itemLista(PREF.catMas, x.k, `${x.veces} ${x.veces === 1 ? "vez" : "veces"}`, "", (x.veces / maxV) * 100, i < 3 && x.veces > 0)).join("");
+
+  const hoy = ahoraFlorida().fecha, mmdd = hoy.slice(5);
+  const anioHoy = +hoy.slice(0, 4), primero = +FECHAS[0].slice(0, 4);
+  const filas = [];
+  for (let y = anioHoy - 1; y >= primero; y--) filas.push(filaDia(`${y}-${mmdd}`, String(y), modo));
+  $("diaComoHoyNota").textContent = `Lo que salió el ${+mmdd.slice(3)} de ${MESES[+mmdd.slice(0, 2) - 1]} de años anteriores.`;
+  $("anios").innerHTML = filas.join("") || `<p class="nota">Todavía no hay años anteriores.</p>`;
+
+  const bf = $("buscarFecha").value;
+  $("resultadoFecha").innerHTML = bf ? (DATA[bf] ? filaDia(bf, textoCorto(bf).split(" ").slice(1).join(" "), "G") : `<p class="nota">No hay números para ese día.</p>`) : "";
+}
+function filaDia(f, titulo, modo) {
+  const a = DATA[f], b = DATA4[f] || [];
+  if (!a) return `<div class="anio"><b>${titulo}</b><span class="nota">Sin datos</span></div>`;
+  const grupo = (i, letra, cls) => a[i] ? `<span class="grupo"><span class="${cls}">${letra}</span><span class="bola mini cen">${a[i][0]}</span><span class="bola mini">${a[i].slice(1)}</span>${b[i] ? `<span class="bola mini par">${b[i].slice(0, 2)}</span><span class="bola mini par">${b[i].slice(2)}</span>` : ""}</span>` : "";
+  const lados = (modo !== "T" ? grupo(0, "☀", "cm") : "") + (modo !== "M" ? grupo(1, "☾", "ct") : "");
+  return `<div class="anio"><b>${titulo}</b><div class="lado">${lados || '<span class="nota">Sin datos</span>'}</div></div>`;
+}
+
+/* ---------- CHARADA ---------- */
+function pintarCharada() {
+  const q = $("buscarCharada").value.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const atr = Object.fromEntries(atrasados("fijo", "G").map(x => [x.k, x]));
+  $("listaCharada").innerHTML = CATS.fijo.claves.map(k => {
+    const [p, otro] = CHARADA[+k];
+    const texto = (k + " " + (k === "00" ? "100 " : "") + p + " " + (otro || "")).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    if (q && !texto.includes(q)) return "";
+    const a = atr[k];
+    return `<li><b>${k}${k === "00" ? " · 100" : ""}</b><span>${p}</span>${otro ? `<small>También: ${otro}</small>` : ""}<small>${a && !a.nunca ? "Fijo " + haceDias(a.dias) : "Sin salir desde 2021"}</small></li>`;
+  }).join("") || `<li><span>No encontré nada con "${$("buscarCharada").value}".</span></li>`;
+}
+
+/* ---------- CALENDARIO ---------- */
 $("cabecera").innerHTML = DIAS.map((_, i) => `<th>${nombreDia(i)}</th>`).join("");
 
 function armarSemanas() {
-  const fechas = Object.keys(DATA).sort();
   const hoy = ahoraFlorida().fecha;
-  const primero = new Date(fechas[0] + "T12:00:00");
+  const primero = fechaDe(FECHAS[0]);
   let inicio = addDays(primero, -((primero.getDay() + 6) % 7));
-  const ultimo = fechas[fechas.length - 1] > hoy ? fechas[fechas.length - 1] : hoy;
-  const fin = new Date(ultimo + "T12:00:00");
+  const ultimo = FECHAS[FECHAS.length - 1] > hoy ? FECHAS[FECHAS.length - 1] : hoy;
+  const fin = fechaDe(ultimo);
   semanas = [];
   for (let l = inicio; l <= fin; l = addDays(l, 7)) {
     const s = [0,1,2,3,4,5,6].map(i => addDays(l, i));
@@ -193,37 +529,6 @@ function armarSemanas() {
   if ([...$("anio").options].some(o => o.value === previo)) $("anio").value = previo;
 }
 
-function pintarEstado() {
-  const fechas = Object.keys(DATA).sort();
-  let txt = "";
-  for (let i = fechas.length - 1; i >= 0; i--) {
-    const r = DATA[fechas[i]];
-    if (r[0] || r[1]) {
-      const d = new Date(fechas[i] + "T12:00:00");
-      const dia = `${DIAS[(d.getDay() + 6) % 7]} ${d.getDate()} ${MES_C[d.getMonth()]}`;
-      txt = `<span>Último: <strong>${dia}</strong></span>` +
-        (r[0] ? `<span><span class="m">M</span> <b>${r[0].slice(1)}</b> <small>(${r[0]})</small></span>` : "") +
-        (r[1] ? `<span><span class="t">T</span> <b>${r[1].slice(1)}</b> <small>(${r[1]})</small></span>` : "");
-      break;
-    }
-  }
-  const { fecha, minutos } = ahoraFlorida();
-  const hoy = DATA[fecha] || [null, null];
-  let proximo;
-  if (!hoy[0]) proximo = minutos < 13 * 60 + 30 ? "hoy a la 1:30 pm (mañana)" : "mañana de hoy: esperando el número…";
-  else if (!hoy[1]) proximo = minutos < 21 * 60 + 45 ? "hoy a las 9:45 pm (tarde)" : "tarde de hoy: esperando el número…";
-  else proximo = "mañana a la 1:30 pm";
-  const hora = x => new Date(x).toLocaleString("es", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", second: "2-digit" });
-  const vivoOk = VIVO_HORA && Date.now() - new Date(VIVO_HORA) < 10 * 60000;
-  const vivo = vivoOk
-    ? `<span class="vivo${enHoraDeSorteo() ? " activo" : ""}">● En vivo</span><small>${enHoraDeSorteo() ? "mirando cada 30 segundos" : "comprobado"} · ${hora(VIVO_HORA)}</small>`
-    : `<small>Historial al ${ACTUALIZADO ? hora(ACTUALIZADO) : "—"}</small>`;
-  $("estado").innerHTML = `<div class="ultimo">${txt}</div>
-    <small>Próximo sorteo: ${proximo} · hora de Florida</small>
-    <div class="fila-btn">${vivo}<button type="button" id="refrescar">Actualizar ahora</button></div>`;
-  $("refrescar").addEventListener("click", () => { cargar(true); enVivo(); });
-}
-
 function clasesNum(k, num, entra, porLinea, porFijo, marcar, g) {
   const f = num.slice(1);
   let c = "n " + k.toLowerCase();
@@ -234,7 +539,7 @@ function clasesNum(k, num, entra, porLinea, porFijo, marcar, g) {
   return c;
 }
 
-function render() {
+function pintarCalendario() {
   const anio = $("anio").value, marcar = $("marcar").value, comparar = $("comparar").value;
   $("leyenda").innerHTML = marcar === "linea"
     ? `<span>Mismo color = misma línea en la semana:</span>` +
@@ -250,17 +555,17 @@ function render() {
       html += `<tr class="mes"><td colspan="7">${k}</td></tr><tr class="dias">${DIAS.map((_, i) => `<th>${nombreDia(i)}</th>`).join("")}</tr>`;
       mesPrevio = k;
     }
-    const tiradas = [];
+    const lista = [];
     sem.forEach(d => {
       const r = DATA[iso(d)];
       if (!r) return;
-      if (r[0]) tiradas.push({ k: "M", f: r[0].slice(1) });
-      if (r[1]) tiradas.push({ k: "T", f: r[1].slice(1) });
+      if (r[0]) lista.push({ k: "M", f: r[0].slice(1) });
+      if (r[1]) lista.push({ k: "T", f: r[1].slice(1) });
     });
     const porLinea = {}, porFijo = {};
     // grupo: con "mezcladas" todo cuenta junto; si no, la mañana solo con la mañana y la tarde solo con la tarde
     const grupo = k => comparar === "todo" ? "" : k;
-    tiradas.filter(t => comparar === "todo" || comparar === "sep" || t.k === comparar).forEach(t => {
+    lista.filter(t => comparar === "todo" || comparar === "sep" || t.k === comparar).forEach(t => {
       const g = grupo(t.k);
       porLinea[g + t.f[0]] = (porLinea[g + t.f[0]] || 0) + 1;
       porFijo[g + t.f] = (porFijo[g + t.f] || 0) + 1;
@@ -277,28 +582,59 @@ function render() {
         return `<span class="n ${k.toLowerCase()} espera"><i>${k}</i><b>${pendiente}</b></span>`;
       };
       const v = r || [null, null];
-      return `<td class="${esHoy ? "hoy" : ""}"><div class="dia">${fecha}${celda("M", v[0], 13 * 60 + 30)}${celda("T", v[1], 21 * 60 + 45)}</div></td>`;
+      return `<td class="${esHoy ? "hoy" : ""}"><div class="dia">${fecha}${celda("M", v[0], HORA_M)}${celda("T", v[1], HORA_T)}</div></td>`;
     }).join("") + "</tr>";
   });
   $("cal").innerHTML = html;
 }
 
-// El historial (datos.json) manda; lo en vivo rellena lo que aún no esté guardado
-function mezclar() {
-  DATA = { ...BASE };
-  for (const [f, v] of Object.entries(VIVO)) {
-    const fila = DATA[f] ? [...DATA[f]] : [null, null];
-    v.forEach((n, i) => { if (!fila[i] && /^\d{3}$/.test(n || "")) fila[i] = n; });
-    DATA[f] = fila;
-  }
+/* ---------- ESTADO Y PANTALLAS ---------- */
+function pintarBarra() {
+  const { fecha } = ahoraFlorida();
+  $("fechaHoy").textContent = textoFecha(fecha) + " · Florida";
+  const vivoOk = VIVO_HORA && Date.now() - new Date(VIVO_HORA) < 10 * 60000;
+  const pill = $("pillVivo");
+  pill.classList.toggle("activo", !!vivoOk && enHoraDeSorteo());
+  const hora = x => new Date(x).toLocaleTimeString("es", { hour: "numeric", minute: "2-digit" });
+  pill.querySelector("span").textContent = vivoOk ? (enHoraDeSorteo() ? "En vivo" : "Al día · " + hora(VIVO_HORA)) : ACTUALIZADO ? "Historial" : "Sin conexión";
 }
 
+const VISTAS = ["hoy", "calendario", "analisis", "charada"];
+function pintarVista() {
+  if (!FECHAS.length) return;
+  pintarBarra();
+  if (PREF.vista === "hoy") pintarHoy();
+  if (PREF.vista === "calendario") pintarCalendario();
+  if (PREF.vista === "analisis") pintarAnalisis();
+  if (PREF.vista === "charada") pintarCharada();
+}
+function irA(v) {
+  if (!VISTAS.includes(v)) v = "hoy";
+  PREF.vista = v;
+  VISTAS.forEach(x => { $("v-" + x).hidden = x !== v; });
+  document.querySelectorAll(".tabs a").forEach(a => { if (a.dataset.v === v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  guardarPref();
+  pintarVista();
+  window.scrollTo(0, 0);
+}
+
+// El historial (datos.json) manda; lo en vivo rellena lo que aún no esté guardado
+function mezclarJuego(base, vivo, patron) {
+  const data = { ...base };
+  for (const [f, v] of Object.entries(vivo)) {
+    const fila = data[f] ? [...data[f]] : [null, null];
+    v.forEach((n, i) => { if (!fila[i] && patron.test(n || "")) fila[i] = n; });
+    data[f] = fila;
+  }
+  return data;
+}
 function aplicar() {
   if (!Object.keys(BASE).length && !Object.keys(VIVO).length) return;
-  mezclar();
+  DATA = mezclarJuego(BASE, VIVO, /^\d{3}$/);
+  DATA4 = mezclarJuego(BASE4, VIVO4, /^\d{4}$/);
+  FECHAS = Object.keys(DATA).filter(f => DATA[f][0] || DATA[f][1]).sort();
   armarSemanas();
-  pintarEstado();
-  render();
+  pintarVista();
 }
 
 async function cargar(forzar) {
@@ -306,12 +642,13 @@ async function cargar(forzar) {
     const r = await fetch("datos.json" + (forzar ? "?t=" + Date.now() : ""), { cache: "no-store" });
     if (!r.ok) throw new Error("HTTP " + r.status);
     const json = await r.json();
-    BASE = json.sorteos;
+    BASE = json.sorteos || {};
+    BASE4 = json.pick4 || {};
     ACTUALIZADO = json.actualizado;
     aplicar();
   } catch (e) {
-    if (Object.keys(DATA).length) return;
-    $("estado").innerHTML = `<div class="aviso">No se pudieron cargar los números. Revisa la conexión y vuelve a abrir la app.</div>`;
+    if (FECHAS.length) return;
+    $("sorteosHoy").innerHTML = `<p class="aviso">No se pudieron cargar los números. Revisa la conexión y vuelve a abrir la app.</p>`;
   }
 }
 
@@ -322,39 +659,55 @@ async function enVivo() {
     if (!r.ok) throw new Error("HTTP " + r.status);
     const json = await r.json();
     VIVO = json.sorteos || {};
+    VIVO4 = json.pick4 || {};
     VIVO_HORA = json.hora || new Date().toISOString();
     aplicar();
   } catch (e) { /* sin conexión: queda lo último que se vio */ }
 }
 
 // Cerca de cada sorteo mira cada 30 segundos; el resto del tiempo cada 5 minutos
-function enHoraDeSorteo() {
-  const m = ahoraFlorida().minutos;
-  return (m >= 13 * 60 + 25 && m <= 14 * 60 + 45) || (m >= 21 * 60 + 40 && m <= 23 * 60);
-}
 function vigilar() {
   if (document.visibilityState === "visible") enVivo();
   setTimeout(vigilar, enHoraDeSorteo() ? 30000 : 5 * 60000);
 }
 
+function guardarPref() {
+  try { localStorage.setItem("pick3-app", JSON.stringify({ ...PREF, anio: $("anio").value, marcar: $("marcar").value, comparar: $("comparar").value, periodo: $("periodo").value })); } catch (e) {}
+}
 try {
-  const p = JSON.parse(localStorage.getItem("pick3-cal2") || "{}");
+  const p = JSON.parse(localStorage.getItem("pick3-app") || "{}");
+  ["modo", "catAtr", "catMas"].forEach(k => { if (p[k]) PREF[k] = p[k]; });
   if (p.marcar) $("marcar").value = p.marcar;
   if (p.comparar) $("comparar").value = p.comparar;
+  if (p.periodo) $("periodo").value = p.periodo;
   if (p.anio) $("anio").innerHTML = `<option value="${p.anio}">${p.anio}</option>`;
+  if (!location.hash && p.vista) PREF.vista = p.vista;
 } catch (e) {}
-["anio", "marcar", "comparar"].forEach(id => $(id).addEventListener("change", () => {
-  try { localStorage.setItem("pick3-cal2", JSON.stringify({ anio: $("anio").value, marcar: $("marcar").value, comparar: $("comparar").value })); } catch (e) {}
-  render();
-}));
+
+["anio", "marcar", "comparar"].forEach(id => $(id).addEventListener("change", () => { guardarPref(); pintarCalendario(); }));
+$("periodo").addEventListener("change", () => { guardarPref(); pintarAnalisis(); });
+$("buscarFecha").addEventListener("change", pintarAnalisis);
+$("buscarCharada").addEventListener("input", pintarCharada);
+$("modo").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PREF.modo = b.dataset.v; guardarPref(); pintarAnalisis(); });
+$("catAtr").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PREF.catAtr = b.dataset.v; PREF.todosAtr = false; guardarPref(); pintarAnalisis(); });
+$("catMas").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PREF.catMas = b.dataset.v; guardarPref(); pintarAnalisis(); });
+$("verTodosAtr").addEventListener("click", () => { PREF.todosAtr = !PREF.todosAtr; pintarAnalisis(); });
+$("refrescar").addEventListener("click", async () => {
+  const b = $("refrescar"); b.classList.add("girando");
+  await Promise.all([cargar(true), enVivo()]);
+  b.classList.remove("girando");
+});
+window.addEventListener("hashchange", () => irA(location.hash.slice(1)));
+$("buscarFecha").value = iso(addDays(fechaDe(ahoraFlorida().fecha), -1));
+irA(location.hash.slice(1) || PREF.vista);
 
 cargar(false);
 vigilar();
 // Al volver a la app mira enseguida; con la app abierta, el historial cada 10 minutos
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { cargar(true); enVivo(); } });
 setInterval(() => { if (document.visibilityState === "visible") cargar(true); }, 10 * 60 * 1000);
-// Cada minuto vuelve a pintar el estado (cambia "esperando" según la hora)
-setInterval(() => { if (Object.keys(DATA).length) { pintarEstado(); render(); } }, 60 * 1000);
+// Cada minuto vuelve a pintar (cambian la cuenta atrás y "esperando" según la hora)
+setInterval(() => { if (FECHAS.length && PREF.vista !== "calendario") pintarVista(); else if (FECHAS.length) pintarBarra(); }, 60 * 1000);
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
