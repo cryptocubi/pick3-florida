@@ -77,9 +77,37 @@ def oficial(juego):
         # El historial empieza en 1988: "99" es 1999, no 2099
         anio = int(anio) + (1900 if int(anio) >= 80 else 2000)
         fecha = dt.date(anio, int(mes), int(dia))
-        if fecha >= DESDE:
-            res.setdefault(fecha.isoformat(), {})["M" if k == "M" else "T"] = "".join(x[4:])
-    return res
+        res.setdefault(fecha.isoformat(), {})["M" if k == "M" else "T"] = "".join(x[4:])
+    return res  # todo el historial (desde 1988); juntar() se queda con lo de DESDE
+
+
+def guardar_historico(oficial_p3, recientes):
+    """historico.json: el Pick 3 completo de cada sorteo, un código de 3 cifras por día ("---" si no hubo)."""
+    todos = {f: dict(v) for f, v in oficial_p3.items()}
+    for f, (m, t) in recientes.items():  # lo más nuevo que aún no está en el PDF
+        if m: todos.setdefault(f, {})["M"] = m
+        if t: todos.setdefault(f, {})["T"] = t
+    salida = {}
+    for k in ("M", "T"):
+        fechas = sorted(f for f, v in todos.items() if k in v)
+        if not fechas:
+            continue
+        d, fin, codigos = dt.date.fromisoformat(fechas[0]), dt.date.fromisoformat(fechas[-1]), []
+        while d <= fin:
+            codigos.append(todos.get(d.isoformat(), {}).get(k, "---"))
+            d += dt.timedelta(days=1)
+        salida[k] = {"desde": fechas[0], "n": "".join(codigos)}
+    ruta = os.path.join(os.path.dirname(ARCHIVO), "historico.json")
+    try:
+        viejo = json.load(open(ruta, encoding="utf-8"))
+    except FileNotFoundError:
+        viejo = None
+    if salida and salida != viejo:
+        with open(ruta, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(salida, f, separators=(",", ":"))
+            f.write("\n")
+        return True
+    return False
 
 
 def lotteryusa(juego):
@@ -117,7 +145,7 @@ def lotterynet(juego, dias=3):
     return res
 
 
-def juntar(clave, juego, viejos):
+def juntar(clave, juego, viejos, completo):
     sorteos = {f: list(v) for f, v in viejos.items()}
     fuentes = []
     try:
@@ -126,7 +154,9 @@ def juntar(clave, juego, viejos):
         print("  LotteryUSA falló:", e)
         fuentes.append(("Lottery.net", lotterynet(juego)))
     try:
-        fuentes.append(("Oficial", oficial(juego)))  # la última manda
+        todo = oficial(juego)
+        completo[clave] = todo
+        fuentes.append(("Oficial", {f: v for f, v in todo.items() if f >= DESDE.isoformat()}))  # la última manda
     except Exception as e:
         print("  oficial falló:", e)
 
@@ -156,8 +186,12 @@ def main():
     except FileNotFoundError:
         viejo = {}
 
-    nuevo = {clave: juntar(clave, juego, viejo.get(clave, {})) for clave, juego in JUEGOS.items()}
+    completo = {}
+    nuevo = {clave: juntar(clave, juego, viejo.get(clave, {}), completo) for clave, juego in JUEGOS.items()}
     cambio = any(nuevo[c] != viejo.get(c) for c in JUEGOS)
+    if "sorteos" in completo and guardar_historico(completo["sorteos"], nuevo["sorteos"]):
+        print("historico.json actualizado")
+        cambio = True
     if cambio:
         salida = {
             "actualizado": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

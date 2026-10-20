@@ -127,7 +127,7 @@ h3 { font-size: 15px; margin: 0; font-weight: 800; }
 .ultimos th { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
 .ultimos td { padding: 8px 4px; border-bottom: 1px solid var(--line); font-size: 13px; vertical-align: middle; }
 .ultimos tr:last-child td { border-bottom: 0; }
-.ultimos .num { font-family: var(--font-num); font-weight: 800; font-size: 16px; }
+.ultimos .num { font-family: var(--font-num); font-weight: 800; font-size: 16px; white-space: nowrap; }
 .ultimos .cor { font-family: var(--font-num); color: var(--muted); font-size: 12px; white-space: nowrap; }
 .ultimos .cm { color: var(--sol); font-weight: 800; font-size: 11px; }
 .ultimos .ct { color: var(--luna); font-weight: 800; font-size: 11px; }
@@ -203,8 +203,47 @@ td.vacio { background: var(--bg); }
   background: var(--surface); border-top: 1px solid var(--line);
   padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
 }
-.tabs-in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-.tabs a { display: grid; justify-items: center; gap: 2px; padding: 6px 0; border-radius: 12px; color: var(--muted); text-decoration: none; font-size: 11px; font-weight: 700; }
+.tabs-in { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+
+/* Pronóstico */
+.caliente { background: linear-gradient(160deg, var(--surface), var(--sol-soft)); }
+.calientes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.calientes > div { display: grid; justify-items: center; gap: 6px; text-align: center; }
+.bola.oro { color: #3b2400; background: radial-gradient(circle at 33% 28%, #fff7d1 0 12%, #fcd34d 45%, #b7791f 100%); width: 66px; height: 66px; font-size: 30px; }
+.votos { font-size: 11px; color: var(--muted); line-height: 1.3; }
+.votos b { color: var(--fg); }
+.ranking { display: grid; gap: 6px; }
+.ranking details { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; }
+.ranking summary { display: flex; align-items: center; gap: 12px; padding: 8px 10px; cursor: pointer; list-style: none; }
+.ranking summary::-webkit-details-marker { display: none; }
+.ranking summary .nombre { font-size: 12px; color: var(--muted); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ranking .detalle { padding: 0 12px 10px 62px; display: grid; gap: 4px; font-size: 13px; }
+.ranking .detalle div { display: flex; justify-content: space-between; gap: 8px; }
+.est { white-space: nowrap; font-size: 16px; letter-spacing: 1px; }
+.est span { color: var(--line); }
+.est span.f { color: #f59e0b; }
+.est span.h { background: linear-gradient(90deg, #f59e0b 50%, var(--line) 50%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.piramides { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.pir { display: grid; gap: 4px; justify-items: center; }
+.pir h3 { font-size: 13px; color: var(--muted); font-weight: 700; text-align: center; }
+.pir .fila-p { font: 700 15px/1.2 var(--font-num); letter-spacing: 0.25em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; }
+.pir .fila-p.fin { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pir .bolas { margin-top: 6px; }
+.pastel { display: grid; grid-template-columns: 170px 1fr; gap: 16px; align-items: center; }
+.pastel svg { width: 170px; height: 170px; }
+.pastel ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.pastel li { display: flex; align-items: center; gap: 8px; }
+.pastel li i { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+.pastel li b { font-family: var(--font-num); margin-left: auto; }
+@media (max-width: 420px) { .pastel { grid-template-columns: 1fr; justify-items: center; } .pastel ul { width: 100%; } }
+.extras { display: grid; gap: 6px; justify-items: center; }
+.extras .grupos { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.extras .grupos span { font: 700 14px var(--font-num); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+.ok { color: #16a34a; font-weight: 800; }
+.desc { font-size: 12px; color: var(--muted); }
+.calc { margin: 0; font-size: 15px; background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; }
+.calc b { font-family: var(--font-num); font-size: 19px; }
+.tabs a { display: grid; justify-items: center; gap: 2px; padding: 6px 0; border-radius: 12px; color: var(--muted); text-decoration: none; font-size: 10.5px; font-weight: 700; }
 .tabs a svg { width: 22px; height: 22px; }
 .tabs a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
 .aviso { font-size: 13px; color: var(--vivo); }
@@ -312,8 +351,79 @@ td.vacio { background: var(--bg); }
   <p class="nota">Esto cuenta lo que ya salió. No adivina el próximo número: cada sorteo es al azar y todos los números tienen la misma probabilidad.</p>
 </main>
 
+<!-- PRONÓSTICO -->
+<main class="vista" id="v-pronostico" hidden>
+  <div class="seg" id="modoP" role="group" aria-label="Sorteo">
+    <button type="button" data-v="M" aria-pressed="true">☀ Mediodía</button>
+    <button type="button" data-v="T" aria-pressed="false">☾ Noche</button>
+  </div>
+  <p class="nota" id="paraCuando"></p>
+
+  <section class="tarjeta caliente">
+    <div><h2>🔥 Bola caliente</h2><p class="nota">Los números que eligen a la vez más métodos de abajo.</p></div>
+    <div class="calientes" id="bolaCaliente"></div>
+  </section>
+
+  <section class="tarjeta">
+    <div><h2>🎲 Probabilidades reales</h2><p class="nota">Lo que de verdad tienes a favor en cada jugada, con las matemáticas del sorteo.</p></div>
+    <div style="overflow-x:auto"><table class="ultimos" id="probJugadas"></table></div>
+    <h3>Calculadora</h3>
+    <div class="fila">
+      <label for="calcNums">Juego <select id="calcNums"></select></label>
+      <label for="calcDias">durante <select id="calcDias"><option>1</option><option>3</option><option selected>7</option><option>15</option><option>30</option><option>90</option><option>365</option></select> días</label>
+      <label for="calcSorteos">en <select id="calcSorteos"><option value="1">un sorteo al día</option><option value="2">los dos sorteos</option></select></label>
+    </div>
+    <p class="calc" id="calcResultado"></p>
+    <h3>¿Sale más el que va atrasado?</h3>
+    <p class="nota" id="mitoNota"></p>
+    <div style="overflow-x:auto"><table class="ultimos" id="mito"></table></div>
+  </section>
+
+  <section class="tarjeta">
+    <div><h2>Ranking</h2><p class="nota">Puntúa cada fijo por lo atrasado que va su decena, su terminal y él mismo, y por cuánto pasa de su promedio. Toca uno para ver por qué.</p></div>
+    <div id="ranking" class="ranking"></div>
+  </section>
+
+  <section class="tarjeta">
+    <div><h2>Mediana</h2><p class="nota" id="medianaNota"></p></div>
+    <div class="bolas" id="mediana"></div>
+  </section>
+
+  <section class="tarjeta">
+    <div><h2>Pirámides</h2><p class="nota">Cada fila suma las cifras de al lado (solo la última cifra). Con las 3 cifras del final se forman 6 números.</p></div>
+    <div class="piramides" id="piramides"></div>
+  </section>
+
+  <section class="tarjeta">
+    <div class="fila" style="justify-content:space-between">
+      <div><h2>Pastel</h2><p class="nota">En qué grupo cayó el fijo. Al azar, cada grupo sale el 20 %.</p></div>
+      <label for="ventanaPastel">Últimos
+        <select id="ventanaPastel">
+          <option value="30">30 días</option>
+          <option value="90" selected>90 días</option>
+          <option value="365">365 días</option>
+          <option value="0">Todo</option>
+        </select>
+      </label>
+    </div>
+    <div class="pastel" id="pastel"></div>
+  </section>
+
+  <section class="tarjeta">
+    <div><h2>¿Cuánto aciertan?</h2><p class="nota">Probé cada método con todos los sorteos del último año, sin dejarle ver el resultado antes. Acierto = el fijo que salió estaba entre los números del método.</p></div>
+    <div style="overflow-x:auto"><table class="ultimos" id="aciertos"></table></div>
+  </section>
+  <p class="nota">Esto es entretenimiento. El Pick 3 sale al azar: ningún método sabe el próximo número, y la tabla de aciertos lo muestra.</p>
+</main>
+
 <!-- CHARADA -->
 <main class="vista" id="v-charada" hidden>
+  <section class="tarjeta">
+    <h2>Compañeros</h2>
+    <div class="fila"><label for="numCompa">Número <input type="number" id="numCompa" min="0" max="99" inputmode="numeric" placeholder="##" style="width:5em"></label></div>
+    <div id="compas" class="bolas"></div>
+    <p class="nota">Los compañeros van de 25 en 25: el 18 tiene al 43, al 68 y al 93.</p>
+  </section>
   <section class="tarjeta">
     <h2>Charada cubana</h2>
     <input type="search" id="buscarCharada" placeholder="Busca un número o una palabra (ej. 18 o pescado)" aria-label="Buscar en la charada">
@@ -327,6 +437,7 @@ td.vacio { background: var(--bg); }
     <a href="#hoy" data-v="hoy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2"/></svg>Hoy</a>
     <a href="#calendario" data-v="calendario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Calendario</a>
     <a href="#analisis" data-v="analisis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>Análisis</a>
+    <a href="#pronostico" data-v="pronostico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1.2-3.6 2.5-4.6.2 1.6 1 2.6 2.1 3.1C11 8.8 11 5.8 12 3z"/></svg>Pronóstico</a>
     <a href="#charada" data-v="charada"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5h10.5a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h10.5"/></svg>Charada</a>
   </div>
 </nav>
@@ -343,22 +454,115 @@ const fechaDe = f => new Date(f + "T12:00:00");
 const diasEntre = (a, b) => Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 864e5);
 const $ = id => document.getElementById(id);
 
-// Charada cubana: [significado principal, otro significado]; el 00 es el 100
-const CHARADA = [["Inodoro","Huevos"],["Caballo"],["Mariposa"],["Marinero","Niño chiquito"],["Gato"],["Monja","Mujer buena"],["Jicotea"],["Caracol"],["Muerto"],["Elefante"],
-  ["Pescado grande"],["Gallo"],["Ramera"],["Pavo real","Chulo"],["Cementerio"],["Perro"],["Toro"],["San Lázaro"],["Pescado chico"],["Lombriz"],
-  ["Gato fino","Tibor"],["Majá"],["Sapo"],["Vapor"],["Paloma"],["Piedra fina"],["Anguila"],["Avispa"],["Chivo"],["Ratón"],
-  ["Camarón"],["Venado"],["Cochino"],["Tiñosa"],["Mono"],["Araña"],["Cachimba"],["Bruja"],["Macao","Dinero"],["Conejo","Culebra"],
-  ["Cura"],["Lagartija"],["Pato"],["Alacrán"],["Año del cuero"],["Tiburón"],["Guagua"],["Pájaro"],["Cucaracha"],["Borracho"],
-  ["Policía"],["Soldado"],["Bicicleta"],["Luz eléctrica"],["Flores"],["Cangrejo"],["Merengue","Gallina sacada"],["Cama"],["Retrato"],["Loco"],
-  ["Payaso"],["Caballo grande"],["Matrimonio"],["Asesino"],["Muerto grande","Muerto vivo"],["Comida"],["Pareja de yeguas","Tarro"],["Puñalada"],["Cementerio"],["Pozo"],
-  ["Coco"],["Río"],["Buey"],["Maleta"],["Papalote"],["Corbata"],["Bailarina"],["Muletas de San Lázaro"],["Sarcófago","Ataúd"],["Tren de carga"],
-  ["Médico viejo"],["Teatro"],["Madre"],["Tragedia"],["Sangre"],["Espejo"],["Tijeras"],["Plátano"],["Espejuelos","Miguel Mariano"],["Mucha agua"],
-  ["Viejo"],["Alpargata"],["Puerco grande"],["Sortija"],["Machete"],["Guerra","Perro grande"],["Zapato"],["Mosquito"],["Piano"],["Serrucho"]];
+// Charada cubana común: todos los significados de cada número; el 00 es el 100
+const CHARADA = [
+  "Inodoro, Dios, Escoba, Automóvil, Jimagua",
+  "Caballo, Sol, Tintero, Camello, Pescado chico, Fiebre alta",
+  "Mariposa, Hombre, Cafetera, Caracol",
+  "Marinero, Niño, Viaje, Luna, Taza, Ciempiés, Muerto, Cafetera",
+  "Gato, Soldado, Llave, Vela, Boca, Militar, Pavo real",
+  "Monja, Mar, Candado, Periódico, Fruta, Lombriz, Lengua",
+  "Jicotea, Aeroplano, Carta, Reverbero, Botella, Luna",
+  "Caracol, Sueño, Mierda, Medias, Caballero, Cochino, Culo",
+  "Muerto, León, Calabaza, Mesa, Tigre",
+  "Elefante, Entierro, Lira, Cubo, Esqueleto, Buey",
+  "Pescado grande, Pescado, Paseo, Malla, Cazuela, Dinero, Lancha, Miedo",
+  "Gallo, Lluvia, Fosforera, Taller, Fábrica, Caballo, Miami",
+  "Mujer santa, Viaje, Toallas, Cometa, Dama, Perro grande, Ropa",
+  "Pavo real, Niño, Anafe, Chulo, Elefante",
+  "Gato tigre, Matrimonio, Arreste, Sartén, Cementerio",
+  "Perro, Visita, Cuchara, Gallo, Ratón",
+  "Toro, Plancha, Vestido, Incendio pequeño, Funerales, Avispa, Regalo",
+  "Luna, Mujer buena, Hule, Camisón, Armas, Fumar opio, San Lázaro, Viaje",
+  "Pescado chiquito, Iglesia, Sirena, Palma, Pescado, Gato amarillo",
+  "Lombriz, Campesino, Tropa, Mesa grande, Armadura, Jutía, Caída",
+  "Gato fino, Cañón, Camiseta, Frijol, Orinal, Libro, Mujer",
+  "Majá, Reloj de bolsillo, Chaleco, Cotorra, Cigarro, Gallo",
+  "Sapo, Estrella, Lirio, Chimenea, Sol, Jicotea, Muñeca",
+  "Vapor, Submarino, Monte, Escalera, Barco, Águila",
+  "Paloma, Música, Carpintero, Cocina, Pescado grande, Hermano",
+  "Piedra fina, Casa, Sol, Monja, Rana, Ojo, Lágrimas",
+  "Anguila, Calle, Médico, Brillante, Nube de oro",
+  "Avispa, Campana, Cuchara grande, Canario, Baúl, Mono",
+  "Chivo, Bandera, Político, Uvas, Perro chico, Bollo",
+  "Ratón, Nube, Venado, Águila, Carpintero",
+  "Camarón, Pene, Arco iris, Almanaque, Buey, Cangrejo, Chivo",
+  "Venado, Escuela, Zapatos, Pato, Diente",
+  "Cochino, Enemigo, Mulo, Demonio, Majá, Dentista",
+  "Tiñosa, Baraja, Santa, Jesucristo, Bofetón, Camarón",
+  "Mono, Familia, Negro, Capataz, Paloma",
+  "Araña, Novia, Bombillos, Mosquito, Mariposa, Gasolina",
+  "Cachimba, Teatro, Bodega, Opio, Coloso, Pajarito",
+  "Gallina prieta, Gitana, Hormiga, Carretera, Piedra fina, Brujería",
+  "Dinero, Macao, Carro, Goleta, Guantes, Barril",
+  "Conejo, Culebra, Rayo, Baile, Tintorero, Ladrón, Pelota",
+  "Cura, Sangre, Bombero, Muchacho maldito, Cantina, Estatua",
+  "Lagartija, Prisión, Pato chico, Jubo, Capuchino, Clarín, Plato",
+  "Pato, País lejano, Carnero, España, Abismo y liga",
+  "Alacrán, Amigo, Vaca, Puerta, Presidiario, Jorobado",
+  "Año del cuero, Tortillera, Infierno, Año malo, Temporal, Tormenta, Plancha",
+  "Tiburón, Presidente, Traje, Tranvía, Escuela, Estrella",
+  "Guagua, Humo, Hambre, Hurón, Baile, Chino",
+  "Pájaro, Mala noticia, Mucha sangre, Escolta, Gallo, Rosa",
+  "Cucaracha, Abanico, Barbería, Cubo, Tiburón, Mucha gente",
+  "Borracho, Riqueza, Figurín, Percha, Tesoro, Fantasma, Fogón",
+  "Policía, Alegría, Florero, Alcalde, Pícaro, Árbol",
+  "Soldado, Sed, Oro, Sereno, Anteojos, Presillas, Cumpleaños",
+  "Bicicleta, Coche, Borracho, Abogado, Riña, Libreta, Desgracia",
+  "Luz eléctrica, Lancha",
+  "Flores, Gallina, Blanca, Sueño, Timbre, Cañón, Rosas",
+  "Cangrejo, Baile, Iglesia grande, Los isleños, Caerse, Sellos",
+  "Reina escorpión, Pato grande, Merengue, Piedra, Cara, Dolor de cabeza, Nieto, Mal olor",
+  "Cama, Ángeles, Telegrama, Puerta, San Lázaro",
+  "Adulterio, Retrato, Cuchillo, Cangrejo, Ferretero, Batea",
+  "Loco, Fonógrafo, Langosta, Anillo, Araña grande",
+  "Sol oscuro, Huevo, Payaso, Cómico, Tempestad, Ave pequeña",
+  "Cañonazo, Piedra grande, Revólver, Boticario, Pintor, Saco, Enfermo",
+  "Matrimonio, Nieve, Lámpara, Visión, Academia, Carretilla",
+  "Asesino, Cuernos, Espada, Bandidos, Caracol, Escalera",
+  "Muerto grande, Tiro de rifle, Maromero, Relajo, Vahos, Fiera, Mango",
+  "Cárcel, Comida, Bruja, Ventana, Trueno",
+  "Divorcio, Tarros, Máscara, Estrella, Mudada, Carnaval",
+  "Puñalada, Reloj, Autoridad, Fonda, Aborto, Zapato",
+  "Cementerio, Globo, Cuchillo grande, Templo, Bolos, Dinero, Muela",
+  "Pozo, Fiera, Loma, Vagos, Polvorín, Ahogado",
+  "Teléfono, Coco, Tiro, Barril, Arco iris, Bala",
+  "Río, Sombrero, Perro mediano, Pantera, Fusil",
+  "Ferrocarril, Buey viejo, Serrucho, Collar, Cetro, Relámpago",
+  "Parque, Navaja, Manzanas, Maleta, Ajedrez, Cigarrillo, Mudada",
+  "Papalote, Coronel, Serpiente, Cólera, Tarima",
+  "Cine, Corbata, Viento, Guitarra, Flores, Quiosco, Perro mediano, Mordida de perro",
+  "Bailarina, Humo en cantidad, Caja de hierro, Violín, Iluminaciones, Represa",
+  "Banderas, Guerra, Colegio, Billetes de banco, Ánfora, Muletas de San Lázaro",
+  "Obispo, Tigre, Sarcófago, Rey, Apetito, Lunares, Casa grande",
+  "Coche, Lagarto, Abogado, Tren, Dulces",
+  "Médico, Buena noticia, Luna llena, Paraguas, Barba, Trompo",
+  "Teatro, Barco, Navaja grande, Ingeniero, Cuerda, Actriz, Hijo",
+  "Madre, León, Batea, Pleito, Estrella, Muelle",
+  "Tragedia, Procesión, Limosnero, Bastón, Madera",
+  "Ciego, Sastre, Bohío, Banquero, Cofre, Marcha atrás, Sangre ajena",
+  "Reloj, Madrid, Águila, Espejo, Guano",
+  "Convento, Marino, Ardilla, Tijera, Desnudar, Palma, Hermano",
+  "Nueva York, Baúl, Paloma, Fuego, Plátanos",
+  "Espejuelos, Gusano, Vaso, Hojas, Aduanero, Muerto grande",
+  "Lotería, Agua, Mona vieja, Cometa, Melón, Tesorero",
+  "Viejo, Espejo grande, Caramelo, Temporal, Asesino, Mucho dinero",
+  "Tranvía, Pájaro negro, Limosnero, Alpargatas, Bolsas, Bolchevique",
+  "Puerco gordo, Globo muy alto, Suicidio, Cuba, Anarquista, León grande",
+  "Revolución, Extranjero, Sortija de valor, General, Andarín, Joyas, Libertad",
+  "Machete, Mariposa grande, Leontina, Habana, Flores",
+  "Guerra, Perro grande, Pelo, Alacrán grande, Espada, Matanzas, Revolución",
+  "Desafío, Periódico, Pícaro, Zapatos nuevos, Roca, Mujer santa, Puta vieja",
+  "Mosquito grande, Mono grande, Sinsonte, Grillo grande, Correr, Limosnero, Mosquitero",
+  "Piano, Entierro, Traición, Beso, Visita regia, Fonógrafo, Ortofónica",
+  "Serrucho, Gallo grande, Temporal, Carbonero, Lluvia, Mucha candela"
+].map(s => s.split(", "));
 const charada = dd => CHARADA[+dd][0];
 
 // Puente en vivo (Cloudflare Worker): trae el número minutos después del sorteo
 const VIVO_URL = "https://pick3-vivo.martinezfuentesesteban8.workers.dev/";
 const HORA_M = 13 * 60 + 30, HORA_T = 21 * 60 + 45;
+const URL_HIST = "historico.json";
 
 let BASE = {}, BASE4 = {}, VIVO = {}, VIVO4 = {}, DATA = {}, DATA4 = {}, FECHAS = [];
 let ACTUALIZADO = null, VIVO_HORA = null, semanas = [];
@@ -380,6 +584,261 @@ const haceDias = n => n === 0 ? "hoy" : n === 1 ? "ayer" : `hace ${n} días`;
 const faltan = min => { const h = Math.floor(min / 60), m = min % 60; return h ? `faltan ${h} h ${m} min` : `faltan ${m} min`; };
 const ICO_SOL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>`;
 const ICO_LUNA = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/></svg>`;
+
+/* ---------- HISTORIAL COMPLETO ---------- */
+// historico.json: el Pick 3 de cada día desde que existe cada sorteo (noche 1988, mediodía 2008)
+let HIST = null, CACHE_SERIE = {};
+const diaNum = f => Date.parse(f + "T00:00:00Z") / 864e5;
+const isoDeDia = n => new Date(n * 864e5).toISOString().slice(0, 10);
+
+// Todos los sorteos de un turno ("M" o "T"), viejos a nuevos: [{f, n}]
+function serie(k) {
+  const clave = k + "|" + (HIST ? 1 : 0) + "|" + FECHAS.length + "|" + (FECHAS.length ? JSON.stringify(DATA[FECHAS[FECHAS.length - 1]]) : "");
+  if (CACHE_SERIE[k] && CACHE_SERIE[k].clave === clave) return CACHE_SERIE[k].s;
+  const i = k === "M" ? 0 : 1, s = [];
+  let hasta = "";
+  if (HIST && HIST[k]) {
+    const d0 = diaNum(HIST[k].desde), n = HIST[k].n;
+    for (let j = 0; j * 3 < n.length; j++) {
+      const c = n.substr(j * 3, 3);
+      if (c !== "---") s.push({ f: isoDeDia(d0 + j), n: c });
+    }
+    hasta = s.length ? s[s.length - 1].f : "";
+  }
+  for (const f of FECHAS) {
+    if (f <= hasta) {  // el historial ya lo tiene; lo en vivo puede corregirlo
+      continue;
+    }
+    if (DATA[f][i]) s.push({ f, n: DATA[f][i] });
+  }
+  CACHE_SERIE[k] = { clave, s };
+  return s;
+}
+function serieGeneral() {
+  const a = serie("M"), b = serie("T"), s = [];
+  let i = 0, j = 0;
+  while (i < a.length || j < b.length) {
+    if (j >= b.length || (i < a.length && a[i].f <= b[j].f)) s.push(a[i++]); else s.push(b[j++]);
+  }
+  return s;
+}
+
+/* ---------- PRONÓSTICO ---------- */
+// Estado que se va llenando sorteo a sorteo (sirve para pronosticar y para medir aciertos sin mirar el futuro)
+function estadoNuevo() { return { cnt: new Array(100).fill(0), ult: new Array(100).fill(null), dec: new Array(10).fill(null), ter: new Array(10).fill(null), primero: null }; }
+function sumar(e, t) {
+  const v = +t.n.slice(1), d = diaNum(t.f);
+  e.cnt[v]++; e.ult[v] = d; e.dec[Math.floor(v / 10)] = d; e.ter[v % 10] = d;
+  if (e.primero === null) e.primero = d;
+}
+const estrellasDe = r => Math.max(0, Math.min(5, Math.round((r - 1) * 1.25 * 2) / 2));
+function ranking(e, hoy) {
+  const out = [];
+  for (let v = 0; v < 100; v++) {
+    const dF = hoy - (e.ult[v] ?? e.primero), dD = hoy - (e.dec[Math.floor(v / 10)] ?? e.primero), dT = hoy - (e.ter[v % 10] ?? e.primero);
+    const prom = (hoy - e.primero) / Math.max(1, e.cnt[v]);
+    const s = [estrellasDe(dD / 10), estrellasDe(dT / 10), estrellasDe(dF / 100), estrellasDe(dF / prom)];
+    out.push({ v, k: String(v).padStart(2, "0"), dF, dD, dT, prom, s, total: Math.round((s[0] + s[1] + s[2] + s[3]) / 4 * 2) / 2, puntos: s[0] + s[1] + s[2] + s[3] });
+  }
+  return out.sort((a, b) => b.puntos - a.puntos || b.dF - a.dF);
+}
+function mediana(e, hoy) {
+  const orden = [...e.cnt].sort((a, b) => a - b), med = Math.floor((orden[49] + orden[50]) / 2);
+  const cerca = [];
+  for (let v = 0; v < 100; v++) if (e.cnt[v] < med) cerca.push({ v, k: String(v).padStart(2, "0"), veces: e.cnt[v], dF: hoy - (e.ult[v] ?? e.primero) });
+  cerca.sort((a, b) => b.veces - a.veces || b.dF - a.dF);
+  return { med, picks: cerca.slice(0, 3) };
+}
+function piramide(cifras) {
+  const filas = [cifras];
+  while (filas[filas.length - 1].length > 1) {
+    const f = filas[filas.length - 1];
+    let n = "";
+    for (let i = 0; i + 1 < f.length; i++) n += (+f[i] + +f[i + 1]) % 10;
+    filas.push(n);
+  }
+  const L = filas.length, a = filas[L - 2][0], b = filas[L - 2][1], c = filas[L - 1][0];
+  return { filas, pares: [a + b, b + a, b + c, c + b, a + c, c + a] };
+}
+const cifrasFecha = f => f.slice(8, 10) + f.slice(5, 7) + f.slice(0, 4);
+const companeros = k => [25, 50, 75].map(x => String((+k + x) % 100).padStart(2, "0")).sort();
+
+// Bola caliente: votos de cada método
+function metodos(e, hoy, previo, fechaObj) {
+  const rk = ranking(e, hoy);
+  const res = {
+    "Ranking": rk.slice(0, 6).map(x => x.k),
+    "Mediana": mediana(e, hoy).picks.map(x => x.k),
+    "Atrasados": [...rk].sort((a, b) => b.dF - a.dF).slice(0, 6).map(x => x.k),
+    "Pirámide de la fecha": [...new Set(piramide(cifrasFecha(fechaObj)).pares)],
+  };
+  if (previo) res["Pirámide del último sorteo"] = [...new Set(piramide(previo).pares)];
+  const votos = {};
+  for (const [m, lista] of Object.entries(res)) for (const k of lista) (votos[k] ??= []).push(m);
+  const puesto = Object.fromEntries(rk.map((x, i) => [x.k, i]));
+  res["Bola caliente"] = Object.keys(votos).sort((a, b) => votos[b].length - votos[a].length || puesto[a] - puesto[b]).slice(0, 3);
+  return { res, votos, rk };
+}
+
+function previoCompleto(k, t) {
+  if (!t) return null;
+  const i = k === "M" ? 0 : 1, p4 = (DATA4[t.f] || [])[i];
+  return p4 ? t.n + p4 : null;
+}
+
+// Para qué sorteo es el pronóstico: hoy si todavía no salió, si no mañana
+function sorteoObjetivo(k) {
+  const { fecha, minutos } = ahoraFlorida(), i = k === "M" ? 0 : 1;
+  const yaSalio = (DATA[fecha] || [])[i];
+  return yaSalio ? iso(addDays(fechaDe(fecha), 1)) : fecha;
+}
+
+const ACIERTOS = {};
+function medirAciertos(k) {
+  const s = serie(k), clave = k + s.length + (s.length ? s[s.length - 1].n : "");
+  if (ACIERTOS[k] && ACIERTOS[k].clave === clave) return ACIERTOS[k].tabla;
+  const desde = iso(addDays(fechaDe(ahoraFlorida().fecha), -365));
+  const e = estadoNuevo();
+  let i = 0;
+  for (; i < s.length && s[i].f < desde; i++) sumar(e, s[i]);
+  const tabla = {};
+  for (; i < s.length; i++) {
+    const t = s[i];
+    const { res } = metodos(e, diaNum(t.f), previoCompleto(k, s[i - 1]), t.f);
+    const fijo = t.n.slice(1);
+    for (const [m, lista] of Object.entries(res)) {
+      const x = (tabla[m] ??= { aciertos: 0, sorteos: 0, numeros: 0 });
+      x.sorteos++; x.numeros += lista.length; if (lista.includes(fijo)) x.aciertos++;
+    }
+    sumar(e, t);
+  }
+  ACIERTOS[k] = { clave, tabla };
+  return tabla;
+}
+
+const PROB = { modo: "M" };
+const pct = x => (x >= 0.1 ? x.toFixed(1) : x >= 0.01 ? x.toFixed(2) : x.toFixed(4)).replace(".", ",") + " %";
+const unoEn = p => "1 en " + Math.round(1 / p).toLocaleString("es");
+
+function pintarProbabilidades() {
+  const jugadas = [
+    ["Fijo (1 número)", 1 / 100, "Que tu número salga de fijo"],
+    ["Corrido (1 número)", 1 - 0.99 * 0.99, "Que salga en una de las dos parejas del Pick 4"],
+    ["Fijo o corrido", 1 - 0.99 ** 3, "Que salga en cualquiera de los 3 lugares"],
+    ["Parlé (2 números)", 6 / 10000, "Que tus dos números salgan entre fijo y corridos"],
+    ["Candado (3 números)", 6 / 1000000, "Que salgan los 3: fijo y los dos corridos"],
+    ["Centena (1 cifra)", 1 / 10, "Que acierte la primera cifra del Pick 3"],
+    ["Pick 3 exacto", 1 / 1000, "Las tres cifras en orden"],
+  ];
+  $("probJugadas").innerHTML = `<thead><tr><th>Jugada</th><th>Probabilidad</th><th>Es decir</th></tr></thead><tbody>` +
+    jugadas.map(([n, p, d]) => `<tr><td><b>${n}</b><br><span class="desc">${d}</span></td><td class="num">${pct(p * 100)}</td><td class="cor">${unoEn(p)}</td></tr>`).join("") + "</tbody>";
+
+  const nums = +$("calcNums").value, dias = +$("calcDias").value, porDia = +$("calcSorteos").value;
+  const sorteos = dias * porDia, p = 1 - (1 - nums / 100) ** sorteos;
+  $("calcResultado").innerHTML = `Jugando <b>${nums}</b> ${nums === 1 ? "número" : "números"} de fijo en <b>${sorteos}</b> ${sorteos === 1 ? "sorteo" : "sorteos"}, la probabilidad de acertar al menos una vez es <b>${pct(p * 100)}</b>.` +
+    (p < 0.5 ? ` Lo más probable es no acertar ninguna.` : ` En promedio acertarías ${(nums * sorteos / 100).toFixed(1).replace(".", ",")} veces.`);
+}
+
+// La prueba del "atrasado": en toda la historia, cuando un fijo llevaba X días sin salir, ¿cuántas veces salió al día siguiente?
+let MITO = null;
+function pintarMito() {
+  const k = PROB.modo, s = serie(k);
+  if (!MITO || MITO.k !== k || MITO.n !== s.length) {
+    const tramos = [[0, 99], [100, 199], [200, 299], [300, 499], [500, 1e9]];
+    const casos = tramos.map(() => ({ veces: 0, salio: 0 }));
+    const ult = new Array(100).fill(null);
+    let previoDia = null;
+    for (const t of s) {
+      const d = diaNum(t.f), v = +t.n.slice(1);
+      if (previoDia !== null) {
+        for (let x = 0; x < 100; x++) {
+          if (ult[x] === null) continue;
+          const atraso = previoDia - ult[x];
+          const j = tramos.findIndex(([a, b]) => atraso >= a && atraso <= b);
+          casos[j].veces++; if (x === v) casos[j].salio++;
+        }
+      }
+      ult[v] = d; previoDia = d;
+    }
+    MITO = { k, n: s.length, tramos, casos };
+  }
+  $("mitoNota").textContent = `Revisé los ${s.length.toLocaleString("es")} sorteos de ${k === "M" ? "mediodía" : "noche"} desde ${s.length ? fechaDe(s[0].f).getFullYear() : ""}. Si los atrasados salieran más, la última columna subiría con el atraso.`;
+  $("mito").innerHTML = `<thead><tr><th>Días sin salir</th><th>Veces</th><th>Salió al siguiente sorteo</th></tr></thead><tbody>` +
+    MITO.tramos.map(([a, b], j) => {
+      const c = MITO.casos[j];
+      return `<tr><td>${b > 1e8 ? a + " o más" : a + "–" + b}</td><td class="cor">${c.veces.toLocaleString("es")}</td><td class="num">${c.veces ? pct(100 * c.salio / c.veces) : "–"}</td></tr>`;
+    }).join("") + `</tbody>`;
+}
+
+function estrellas(x) {
+  let h = "";
+  for (let i = 1; i <= 5; i++) h += `<span class="${x >= i ? "f" : x >= i - 0.5 ? "h" : ""}">★</span>`;
+  return `<span class="est" aria-label="${x} de 5 estrellas">${h}</span>`;
+}
+
+function pintarPronostico() {
+  const k = PROB.modo;
+  document.querySelectorAll("#modoP button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === k));
+  const s = serie(k);
+  if (!s.length) return;
+  const objetivo = sorteoObjetivo(k), hoy = diaNum(objetivo);
+  const e = estadoNuevo();
+  for (const t of s) sumar(e, t);
+  const previo = previoCompleto(k, s[s.length - 1]);
+  const { res, votos, rk } = metodos(e, hoy, previo, objetivo);
+  $("paraCuando").textContent = `Para el sorteo de ${k === "M" ? "mediodía" : "noche"} del ${textoFecha(objetivo).toLowerCase()} · historial desde ${fechaDe(s[0].f).getFullYear()} (${s.length.toLocaleString("es")} sorteos).`;
+
+  $("bolaCaliente").innerHTML = res["Bola caliente"].map(n => `<div><span class="bola oro">${n}</span><b>${charada(n)}</b>
+    <span class="votos"><b>${votos[n].length} de ${Object.keys(res).length - 1}</b> métodos:<br>${votos[n].join(", ")}</span></div>`).join("");
+
+  pintarProbabilidades();
+  pintarMito();
+
+  $("ranking").innerHTML = rk.slice(0, 8).map(x => `<details><summary><span class="bola mini">${x.k}</span>${estrellas(x.total)}<span class="nombre">${charada(x.k)}</span></summary>
+    <div class="detalle">
+      <div><span>Decena ${x.k[0]} (${x.dD} días sin salir)</span>${estrellas(x.s[0])}</div>
+      <div><span>Terminal ${x.k[1]} (${x.dT} días)</span>${estrellas(x.s[1])}</div>
+      <div><span>Fijo ${x.k} (${x.dF} días)</span>${estrellas(x.s[2])}</div>
+      <div><span>Frecuencia (sale cada ${Math.round(x.prom)} días de media)</span>${estrellas(x.s[3])}</div>
+      <div><span>Probabilidad real del próximo sorteo</span><b>1 %</b></div>
+    </div></details>`).join("");
+
+  const md = mediana(e, hoy);
+  $("medianaNota").textContent = `La mitad de los números ha salido más de ${md.med} veces y la otra mitad menos. Estos son los que están más cerca de llegar a ${md.med}.`;
+  $("mediana").innerHTML = md.picks.map(x => `<div style="display:grid;justify-items:center;gap:4px"><span class="bola">${x.k}</span><span class="votos"><b>${x.veces} veces</b><br>${charada(x.k)}</span></div>`).join("");
+
+  const pir = (titulo, cifras) => {
+    if (!cifras) return `<div class="pir"><h3>${titulo}</h3><p class="nota">Falta el Pick 4 de ese sorteo.</p></div>`;
+    const p = piramide(cifras);
+    return `<div class="pir"><h3>${titulo}</h3>${p.filas.map((f, i) => `<span class="fila-p${i >= p.filas.length - 2 ? " fin" : ""}">${f}</span>`).join("")}
+      <div class="bolas">${p.pares.map(x => `<span class="bola mini">${x}</span>`).join("")}</div></div>`;
+  };
+  const ultimo = s[s.length - 1];
+  $("piramides").innerHTML = pir(`Del último sorteo (${textoCorto(ultimo.f)}: ${ultimo.n} y ${(DATA4[ultimo.f] || [])[k === "M" ? 0 : 1] || "?"})`, previo) + pir(`De la fecha (${cifrasFecha(objetivo)})`, cifrasFecha(objetivo));
+
+  const ventana = +$("ventanaPastel").value;
+  const desde = ventana ? iso(addDays(fechaDe(ahoraFlorida().fecha), -(ventana - 1))) : "";
+  const g = [0, 0, 0, 0, 0];
+  for (const t of s) if (t.f >= desde) g[Math.floor(+t.n.slice(1) / 20)]++;
+  const tot = g.reduce((a, b) => a + b, 0) || 1, colores = ["var(--l7)", "var(--l1)", "var(--l2)", "var(--l0)", "var(--l5)"];
+  const max = Math.max(...g), min = Math.min(...g);
+  let ang = -Math.PI / 2, arcos = "";
+  g.forEach((v, i) => {
+    const a2 = ang + (v / tot) * Math.PI * 2, r = 70, c = 85;
+    const x1 = c + r * Math.cos(ang), y1 = c + r * Math.sin(ang), x2 = c + r * Math.cos(a2), y2 = c + r * Math.sin(a2);
+    arcos += `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 ${a2 - ang > Math.PI ? 1 : 0} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${colores[i]}" stroke-width="${v === max ? 34 : 26}"/>`;
+    ang = a2;
+  });
+  $("pastel").innerHTML = `<svg viewBox="0 0 170 170" role="img" aria-label="Reparto del fijo por grupos">${arcos}<text x="85" y="82" text-anchor="middle" font-size="22" font-weight="800" fill="var(--fg)" font-family="JetBrains Mono, monospace">${tot}</text><text x="85" y="100" text-anchor="middle" font-size="11" fill="var(--muted)">sorteos</text></svg>
+    <ul>${g.map((v, i) => `<li><i style="background:${colores[i]}"></i>${String(i * 20).padStart(2, "0")}–${i * 20 + 19}${v === max ? " · el que más" : v === min ? " · el que menos" : ""}<b>${pct(100 * v / tot)}</b></li>`).join("")}</ul>`;
+
+  const tabla = medirAciertos(k);
+  const filas = Object.entries(tabla).sort((a, b) => b[1].aciertos / b[1].sorteos - a[1].aciertos / a[1].sorteos);
+  $("aciertos").innerHTML = `<thead><tr><th>Método</th><th>Acertó</th><th>Real</th><th>Al azar</th></tr></thead><tbody>` + filas.map(([m, x]) => {
+    const real = 100 * x.aciertos / x.sorteos, azar = x.numeros / x.sorteos;
+    return `<tr><td>${m}<br><span class="cor">${(x.numeros / x.sorteos).toFixed(1).replace(".", ",")} números</span></td><td class="cor">${x.aciertos} de ${x.sorteos}</td><td class="num${real > azar ? " ok" : ""}">${pct(real)}</td><td class="cor">${pct(azar)}</td></tr>`;
+  }).join("") + `</tbody>`;
+}
 
 /* ---------- HOY ---------- */
 function bolasFijo(n3) {
@@ -403,6 +862,8 @@ function pintarHoy() {
         <span class="significado">${n3 ? `<b>${fijo}</b> ${charada(fijo)} · centena <b>${n3[0]}</b>` : `Sale ${hora === "1:30 pm" ? "a la" : "a las"} ${hora}`}</span></div>
       <div class="bloque"><span class="etq">Corridos</span>${bolasCorridos(n4)}
         <span class="significado">${n4 ? `<b>${n4.slice(0, 2)}</b> ${charada(n4.slice(0, 2))} · <b>${n4.slice(2)}</b> ${charada(n4.slice(2))}` : "Del Pick 4 del mismo sorteo"}</span></div>
+      ${n3 && n4 ? `<div class="bloque extras"><span class="etq">Parlés</span><div class="grupos"><span>${fijo} · ${n4.slice(0, 2)}</span><span>${n4.slice(0, 2)} · ${n4.slice(2)}</span><span>${fijo} · ${n4.slice(2)}</span></div>
+        <span class="etq">Candado</span><div class="grupos"><span>${fijo} · ${n4.slice(0, 2)} · ${n4.slice(2)}</span></div></div>` : ""}
     </section>`;
   }).join("");
 
@@ -424,18 +885,13 @@ const CATS = {
   doble: { nombre: "Dobles", claves: DIG.map(d => d + d), de: n => n[1] === n[2] ? n.slice(1) : null },
 };
 function tiradas(modo) {
-  const out = [];
-  for (const f of FECHAS) {
-    const r = DATA[f];
-    if (modo !== "T" && r[0]) out.push({ f, n: r[0] });
-    if (modo !== "M" && r[1]) out.push({ f, n: r[1] });
-  }
-  return out;
+  return modo === "G" ? serieGeneral() : serie(modo);
 }
 function atrasados(cat, modo) {
   const c = CATS[cat], ultimo = {}, hoy = ahoraFlorida().fecha;
-  for (const t of tiradas(modo)) { const k = c.de(t.n); if (k !== null) ultimo[k] = t.f; }
-  const inicio = FECHAS[0];
+  const lista = tiradas(modo);
+  for (const t of lista) { const k = c.de(t.n); if (k !== null) ultimo[k] = t.f; }
+  const inicio = lista.length ? lista[0].f : FECHAS[0];
   return c.claves.map(k => ({ k, dias: ultimo[k] ? diasEntre(ultimo[k], hoy) : null, nunca: !ultimo[k], max: diasEntre(inicio, hoy) }))
     .sort((a, b) => (b.dias ?? 1e9) - (a.dias ?? 1e9) || a.k.localeCompare(b.k));
 }
@@ -499,11 +955,11 @@ function pintarCharada() {
   const q = $("buscarCharada").value.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   const atr = Object.fromEntries(atrasados("fijo", "G").map(x => [x.k, x]));
   $("listaCharada").innerHTML = CATS.fijo.claves.map(k => {
-    const [p, otro] = CHARADA[+k];
-    const texto = (k + " " + (k === "00" ? "100 " : "") + p + " " + (otro || "")).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    const [p, ...otros] = CHARADA[+k], otro = otros.join(", ");
+    const texto = (k + " " + (k === "00" ? "100 " : "") + p + " " + otro).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
     if (q && !texto.includes(q)) return "";
     const a = atr[k];
-    return `<li><b>${k}${k === "00" ? " · 100" : ""}</b><span>${p}</span>${otro ? `<small>También: ${otro}</small>` : ""}<small>${a && !a.nunca ? "Fijo " + haceDias(a.dias) : "Sin salir desde 2021"}</small></li>`;
+    return `<li><b>${k}${k === "00" ? " · 100" : ""}</b><span>${p}</span>${otro ? `<small>${otro}</small>` : ""}<small>Compañeros: ${companeros(k).join(" · ")}</small><small>${a && !a.nunca ? "Fijo " + haceDias(a.dias) : "Sin salir"}</small></li>`;
   }).join("") || `<li><span>No encontré nada con "${$("buscarCharada").value}".</span></li>`;
 }
 
@@ -599,14 +1055,15 @@ function pintarBarra() {
   pill.querySelector("span").textContent = vivoOk ? (enHoraDeSorteo() ? "En vivo" : "Al día · " + hora(VIVO_HORA)) : ACTUALIZADO ? "Historial" : "Sin conexión";
 }
 
-const VISTAS = ["hoy", "calendario", "analisis", "charada"];
+const VISTAS = ["hoy", "calendario", "analisis", "pronostico", "charada"];
 function pintarVista() {
   if (!FECHAS.length) return;
   pintarBarra();
   if (PREF.vista === "hoy") pintarHoy();
   if (PREF.vista === "calendario") pintarCalendario();
   if (PREF.vista === "analisis") pintarAnalisis();
-  if (PREF.vista === "charada") pintarCharada();
+  if (PREF.vista === "charada") { pintarCharada(); pintarCompas(); }
+  if (PREF.vista === "pronostico") pintarPronostico();
 }
 function irA(v) {
   if (!VISTAS.includes(v)) v = "hoy";
@@ -652,6 +1109,16 @@ async function cargar(forzar) {
   }
 }
 
+async function cargarHistorico() {
+  try {
+    const r = await fetch(URL_HIST, { cache: "no-cache" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    HIST = await r.json();
+    CACHE_SERIE = {};
+    pintarVista();
+  } catch (e) { /* sin historial completo: se usa desde 2021 */ }
+}
+
 async function enVivo() {
   if (!VIVO_URL.startsWith("http")) return;
   try {
@@ -688,6 +1155,19 @@ try {
 $("periodo").addEventListener("change", () => { guardarPref(); pintarAnalisis(); });
 $("buscarFecha").addEventListener("change", pintarAnalisis);
 $("buscarCharada").addEventListener("input", pintarCharada);
+$("calcNums").innerHTML = [1, 2, 3, 5, 10, 20, 50].map(n => `<option value="${n}">${n} ${n === 1 ? "número" : "números"}</option>`).join("");
+["calcNums", "calcDias", "calcSorteos"].forEach(id => $(id).addEventListener("change", pintarProbabilidades));
+$("ventanaPastel").addEventListener("change", pintarPronostico);
+$("modoP").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PROB.modo = b.dataset.v; pintarPronostico(); });
+$("numCompa").addEventListener("input", pintarCompas);
+function pintarCompas() {
+  const v = $("numCompa").value.trim();
+  if (v === "" || +v < 0 || +v > 99) { $("compas").innerHTML = ""; return; }
+  const k = String(+v).padStart(2, "0");
+  $("compas").innerHTML = `<span class="bola cen">${k}</span>` + companeros(k).map(c => `<div style="display:grid;justify-items:center;gap:2px"><span class="bola">${c}</span><span class="votos">${charada(c)}</span></div>`).join("");
+}
+// El pronóstico arranca en el próximo sorteo
+PROB.modo = ahoraFlorida().minutos < HORA_M || ahoraFlorida().minutos >= HORA_T + 30 ? "M" : "T";
 $("modo").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PREF.modo = b.dataset.v; guardarPref(); pintarAnalisis(); });
 $("catAtr").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PREF.catAtr = b.dataset.v; PREF.todosAtr = false; guardarPref(); pintarAnalisis(); });
 $("catMas").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PREF.catMas = b.dataset.v; guardarPref(); pintarAnalisis(); });
@@ -703,6 +1183,7 @@ irA(location.hash.slice(1) || PREF.vista);
 
 cargar(false);
 vigilar();
+cargarHistorico();
 // Al volver a la app mira enseguida; con la app abierta, el historial cada 10 minutos
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { cargar(true); enVivo(); } });
 setInterval(() => { if (document.visibilityState === "visible") cargar(true); }, 10 * 60 * 1000);

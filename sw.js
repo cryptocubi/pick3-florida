@@ -1,6 +1,6 @@
 // Guarda la app para abrirla sin internet. Los números (datos.json) se piden siempre a la red primero.
-const CACHE = "pick3-v4";
-const APP = ["./", "index.html", "manifest.webmanifest", "icono-192.png", "icono-512.png", "icono-180.png"];
+const CACHE = "pick3-v5";
+const APP = ["./", "index.html", "manifest.webmanifest", "icono-192.png", "icono-512.png", "icono-180.png", "historico.json"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(APP)).then(() => self.skipWaiting()));

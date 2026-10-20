@@ -24,6 +24,8 @@ cambios = [
     # el historial se pide a la app publicada
     ('fetch("datos.json" + (forzar ? "?t=" + Date.now() : ""), { cache: "no-store" })',
      f'fetch("{WEB}datos.json?t=" + Date.now(), {{ cache: "no-store" }})'),
+    # el historial completo también se pide a la app publicada
+    ('const URL_HIST = "historico.json";', f'const URL_HIST = "{WEB}historico.json";'),
     # arranca con los números que trae dentro
     ("cargar(false);\nvigilar();",
      "const INICIAL = " + json.dumps(datos, separators=(",", ":")) + ";\n"
