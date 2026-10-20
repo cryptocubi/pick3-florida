@@ -161,11 +161,12 @@ select, input[type="date"], input[type="search"] { padding: 7px 10px; border: 1p
 .anio .grupo > span:first-child { font-size: 11px; font-weight: 800; width: 14px; }
 
 /* Charada */
-.charada { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
-.charada li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 2px; }
+.charada { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.charada li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 4px; align-content: start; }
 .charada li b { font: 800 22px/1 var(--font-num); color: var(--accent); }
-.charada li span { font-weight: 700; font-size: 14px; }
-.charada li small { font-size: 11px; color: var(--muted); }
+.charada li span { font-weight: 900; font-size: 16px; color: var(--fg); }
+.charada li .mas { margin: 0; font-weight: 700; font-size: 14px; line-height: 1.35; color: var(--fg); }
+.charada li .hace { font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 2px; }
 
 /* Calendario */
 .legend { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 12px; color: var(--muted); align-items: center; }
@@ -240,6 +241,10 @@ td.vacio { background: var(--bg); }
 .extras .grupos { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .extras .grupos span { font: 700 14px var(--font-num); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
 .ok { color: #16a34a; font-weight: 800; }
+.vista-in { display: grid; gap: 14px; }
+.tabla-compas { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.tabla-compas div { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.tabla-compas div .bola.cen { margin-right: 6px; }
 .desc { font-size: 12px; color: var(--muted); }
 .calc { margin: 0; font-size: 15px; background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; }
 .calc b { font-family: var(--font-num); font-size: 19px; }
@@ -418,18 +423,30 @@ td.vacio { background: var(--bg); }
 
 <!-- CHARADA -->
 <main class="vista" id="v-charada" hidden>
-  <section class="tarjeta">
-    <h2>Compañeros</h2>
-    <div class="fila"><label for="numCompa">Número <input type="number" id="numCompa" min="0" max="99" inputmode="numeric" placeholder="##" style="width:5em"></label></div>
-    <div id="compas" class="bolas"></div>
-    <p class="nota">Los compañeros van de 25 en 25: el 18 tiene al 43, al 68 y al 93.</p>
-  </section>
-  <section class="tarjeta">
-    <h2>Charada cubana</h2>
-    <input type="search" id="buscarCharada" placeholder="Busca un número o una palabra (ej. 18 o pescado)" aria-label="Buscar en la charada">
-    <p class="nota">Debajo de cada número: cuántos días lleva sin salir de fijo (mediodía o noche).</p>
-  </section>
-  <ul class="charada" id="listaCharada"></ul>
+  <div class="seg" id="subCha" role="group" aria-label="Sección">
+    <button type="button" data-v="charada" aria-pressed="true">Charada</button>
+    <button type="button" data-v="compas" aria-pressed="false">Compañeros</button>
+  </div>
+  <div id="secCharada" class="vista-in">
+    <section class="tarjeta">
+      <h2>Charada cubana</h2>
+      <input type="search" id="buscarCharada" placeholder="Busca un número o una palabra (ej. 18 o pescado)" aria-label="Buscar en la charada">
+      <p class="nota">Debajo de cada número: cuántos días lleva sin salir de fijo (mediodía o noche).</p>
+    </section>
+    <ul class="charada" id="listaCharada"></ul>
+  </div>
+  <div id="secCompas" class="vista-in" hidden>
+    <section class="tarjeta">
+      <h2>Números compañeros</h2>
+      <div class="fila"><label for="numCompa">Busca un número <input type="number" id="numCompa" min="0" max="99" inputmode="numeric" placeholder="##" style="width:5em"></label></div>
+      <div id="compas" class="bolas"></div>
+      <p class="nota">Los compañeros van de 25 en 25: el 18 tiene al 43, al 68 y al 93.</p>
+    </section>
+    <section class="tarjeta">
+      <h2>Todos los compañeros</h2>
+      <div class="tabla-compas" id="tablaCompas"></div>
+    </section>
+  </div>
 </main>
 
 <nav class="tabs" aria-label="Pantallas">
@@ -959,7 +976,7 @@ function pintarCharada() {
     const texto = (k + " " + (k === "00" ? "100 " : "") + p + " " + otro).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
     if (q && !texto.includes(q)) return "";
     const a = atr[k];
-    return `<li><b>${k}${k === "00" ? " · 100" : ""}</b><span>${p}</span>${otro ? `<small>${otro}</small>` : ""}<small>Compañeros: ${companeros(k).join(" · ")}</small><small>${a && !a.nunca ? "Fijo " + haceDias(a.dias) : "Sin salir"}</small></li>`;
+    return `<li><b>${k}${k === "00" ? " · 100" : ""}</b><span>${p}</span>${otro ? `<p class="mas">${otro}</p>` : ""}<small class="hace">${a && !a.nunca ? "Fijo " + haceDias(a.dias) : "Sin salir"}</small></li>`;
   }).join("") || `<li><span>No encontré nada con "${$("buscarCharada").value}".</span></li>`;
 }
 
@@ -1062,7 +1079,7 @@ function pintarVista() {
   if (PREF.vista === "hoy") pintarHoy();
   if (PREF.vista === "calendario") pintarCalendario();
   if (PREF.vista === "analisis") pintarAnalisis();
-  if (PREF.vista === "charada") { pintarCharada(); pintarCompas(); }
+  if (PREF.vista === "charada") { pintarCharada(); pintarCompas(); pintarTablaCompas(); }
   if (PREF.vista === "pronostico") pintarPronostico();
 }
 function irA(v) {
@@ -1160,6 +1177,16 @@ $("calcNums").innerHTML = [1, 2, 3, 5, 10, 20, 50].map(n => `<option value="${n}
 $("ventanaPastel").addEventListener("change", pintarPronostico);
 $("modoP").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; PROB.modo = b.dataset.v; pintarPronostico(); });
 $("numCompa").addEventListener("input", pintarCompas);
+$("subCha").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  document.querySelectorAll("#subCha button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  $("secCharada").hidden = b.dataset.v !== "charada";
+  $("secCompas").hidden = b.dataset.v !== "compas";
+});
+function pintarTablaCompas() {
+  if ($("tablaCompas").childElementCount) return;
+  $("tablaCompas").innerHTML = CATS.fijo.claves.map(k => `<div><span class="bola mini cen">${k}</span>${companeros(k).map(c => `<span class="bola mini">${c}</span>`).join("")}</div>`).join("");
+}
 function pintarCompas() {
   const v = $("numCompa").value.trim();
   if (v === "" || +v < 0 || +v > 99) { $("compas").innerHTML = ""; return; }
