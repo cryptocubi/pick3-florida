@@ -2,3 +2,8 @@ name = "pick3-vivo"
 main = "worker.js"
 compatibility_date = "2025-09-01"
 workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pick3-pronosticos"
+database_id = "9d4ca0d4-6fbf-4b66-b23e-2ffdc90d12b7"

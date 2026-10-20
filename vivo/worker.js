@@ -103,15 +103,99 @@ async function leer() {
   return { hora: new Date().toISOString(), sorteos, pick4, ...(fallos.length ? { fallos } : {}) };
 }
 
+/* ---------- PRONÓSTICOS DE LA GENTE (base de datos D1) ---------- */
+const CIERRE = { M: 13 * 60 + 25, T: 21 * 60 + 40 }; // se cierra 5 minutos antes del sorteo
+const PALABROTAS = ["mierda", "puta", "puto", "pinga", "singao", "singado", "cojone", "maricon", "maricón", "comemierda", "culo", "verga", "pendejo", "cabron", "cabrón", "hijueputa", "fuck", "shit", "bitch"];
+
+function ahoraFlorida() {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })
+    .formatToParts(new Date()).map(x => [x.type, x.value]));
+  return { fecha: `${p.year}-${p.month}-${p.day}`, minutos: (+p.hour % 24) * 60 + +p.minute };
+}
+// Los dos próximos sorteos que aún aceptan pronósticos
+function abiertos() {
+  const { fecha, minutos } = ahoraFlorida();
+  const manana = fechaFlorida(-1).iso;
+  const lista = [];
+  if (minutos < CIERRE.M) lista.push({ fecha, sorteo: "M" });
+  if (minutos < CIERRE.T) lista.push({ fecha, sorteo: "T" });
+  lista.push({ fecha: manana, sorteo: "M" }, { fecha: manana, sorteo: "T" });
+  return lista.slice(0, 2);
+}
+async function huella(texto) {
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+const json = (datos, cors, status = 200) => new Response(JSON.stringify(datos), { status, headers: cors });
+const fechaOk = f => /^\d{4}-\d{2}-\d{2}$/.test(f || "");
+
+function limpiarNombre(n) {
+  n = String(n || "").normalize("NFC").replace(/\s+/g, " ").trim();
+  if (n.length < 2 || n.length > 20) return { error: "El apodo debe tener entre 2 y 20 letras." };
+  if (!/^[\p{L}\p{N} ._-]+$/u.test(n)) return { error: "El apodo solo puede llevar letras, números, espacios, punto o guion." };
+  const plano = n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z]/g, "");
+  if (PALABROTAS.some(p => plano.includes(p.normalize("NFD").replace(/[\u0300-\u036f]/g, "")))) return { error: "Ese apodo no está permitido. Elige otro." };
+  return { nombre: n };
+}
+
+async function pronosticos(request, env, cors) {
+  if (!env.DB) return json({ error: "Sin base de datos" }, cors, 503);
+  const url = new URL(request.url);
+
+  if (request.method === "GET" && url.pathname === "/pronosticos") {
+    const fecha = url.searchParams.get("fecha"), sorteo = url.searchParams.get("sorteo");
+    if (!fechaOk(fecha) || !["M", "T"].includes(sorteo)) return json({ error: "Falta fecha o sorteo" }, cors, 400);
+    const { results } = await env.DB.prepare("SELECT nombre, numeros, creado, dispositivo FROM pronosticos WHERE fecha = ? AND sorteo = ? ORDER BY creado DESC LIMIT 500").bind(fecha, sorteo).all();
+    const lista = await Promise.all(results.map(async r => ({ nombre: r.nombre, numeros: r.numeros.split(","), creado: r.creado, quien: (await huella(r.dispositivo)).slice(0, 10) })));
+    return json({ fecha, sorteo, abiertos: abiertos(), lista }, cors);
+  }
+
+  if (request.method === "GET" && url.pathname === "/pronosticos/recientes") {
+    const dias = Math.min(90, Math.max(1, +url.searchParams.get("dias") || 30));
+    const desde = fechaFlorida(dias).iso;
+    const { results } = await env.DB.prepare("SELECT fecha, sorteo, nombre, numeros, dispositivo FROM pronosticos WHERE fecha >= ? ORDER BY fecha LIMIT 20000").bind(desde).all();
+    const lista = await Promise.all(results.map(async r => ({ fecha: r.fecha, sorteo: r.sorteo, nombre: r.nombre, numeros: r.numeros.split(","), quien: (await huella(r.dispositivo)).slice(0, 10) })));
+    return json({ desde, abiertos: abiertos(), lista }, cors);
+  }
+
+  if (request.method === "POST" && url.pathname === "/pronosticos") {
+    let b;
+    try { b = await request.json(); } catch { return json({ error: "No entendí el pronóstico." }, cors, 400); }
+    const { fecha, sorteo, dispositivo } = b || {};
+    if (!abiertos().some(a => a.fecha === fecha && a.sorteo === sorteo)) return json({ error: "Ese sorteo ya cerró. Elige el próximo." }, cors, 400);
+    if (!/^[a-z0-9]{16,40}$/.test(dispositivo || "")) return json({ error: "Falta el identificador del teléfono." }, cors, 400);
+    const nom = limpiarNombre(b.nombre);
+    if (nom.error) return json({ error: nom.error }, cors, 400);
+    const numeros = [...new Set((Array.isArray(b.numeros) ? b.numeros : []).map(n => String(n).trim()))];
+    if (numeros.length < 1 || numeros.length > 3 || !numeros.every(n => /^\d{2}$/.test(n))) return json({ error: "Pon de 1 a 3 fijos, del 00 al 99." }, cors, 400);
+
+    const ip = await huella((request.headers.get("CF-Connecting-IP") || "?") + "|" + (env.SAL || "pick3"));
+    const haceUnaHora = new Date(Date.now() - 3600e3).toISOString();
+    const { n } = await env.DB.prepare("SELECT COUNT(*) AS n FROM pronosticos WHERE ip = ? AND creado > ?").bind(ip, haceUnaHora).first();
+    if (n >= 30) return json({ error: "Demasiados pronósticos seguidos. Prueba en un rato." }, cors, 429);
+
+    await env.DB.prepare(`INSERT INTO pronosticos (fecha, sorteo, nombre, dispositivo, numeros, ip, creado) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT (fecha, sorteo, dispositivo) DO UPDATE SET nombre = excluded.nombre, numeros = excluded.numeros, ip = excluded.ip, creado = excluded.creado`)
+      .bind(fecha, sorteo, nom.nombre, dispositivo, numeros.join(","), ip, new Date().toISOString()).run();
+    return json({ ok: true, fecha, sorteo, nombre: nom.nombre, numeros }, cors);
+  }
+  return json({ error: "No encontrado" }, cors, 404);
+}
+
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const cors = {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
     };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
+    if (new URL(request.url).pathname.startsWith("/pronosticos")) {
+      try { return await pronosticos(request, env, cors); }
+      catch (e) { return json({ error: "No se pudo guardar. Prueba otra vez." }, cors, 500); }
+    }
     try {
       if (!guardado || Date.now() - guardado.cuando > GUARDA_MS) {
         guardado = { cuando: Date.now(), cuerpo: JSON.stringify(await leer()) };

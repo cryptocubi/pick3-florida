@@ -242,6 +242,21 @@ td.vacio { background: var(--bg); }
 .extras .grupos span { font: 700 14px var(--font-num); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
 .ok { color: #16a34a; font-weight: 800; }
 .vista-in { display: grid; gap: 14px; }
+.form-gente { display: grid; gap: 10px; }
+.form-gente label { display: grid; gap: 4px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.form-gente input { font-size: 17px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); min-width: 0; }
+.fijos-in { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.fijos-in input { font: 800 22px var(--font-num); text-align: center; letter-spacing: 0.08em; }
+.btn-prin { border: 0; border-radius: 12px; padding: 12px; font-weight: 800; font-size: 15px; color: #fff; background: linear-gradient(135deg, var(--cielo-1), var(--cielo-2)); }
+.btn-prin:disabled { opacity: 0.6; }
+#msgGente.ok { color: #16a34a; font-weight: 700; }
+#msgGente.mal { color: var(--vivo); font-weight: 700; }
+.gente-lista { display: grid; gap: 6px; }
+.persona { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.persona b { font-size: 14px; margin-right: auto; }
+.persona.yo { border-color: var(--accent); }
+.antes { display: grid; gap: 6px; padding: 10px; border-radius: 12px; border: 1px solid var(--line); }
+.antes h3 { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .tabla-compas { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
 .tabla-compas div { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
 .tabla-compas div .bola.cen { margin-right: 6px; }
@@ -358,6 +373,46 @@ td.vacio { background: var(--bg); }
 
 <!-- PRONÓSTICO -->
 <main class="vista" id="v-pronostico" hidden>
+  <div class="seg" id="subPro" role="group" aria-label="Sección">
+    <button type="button" data-v="metodos" aria-pressed="true">Métodos</button>
+    <button type="button" data-v="gente" aria-pressed="false">👥 La gente</button>
+  </div>
+
+  <div id="secGente" class="vista-in" hidden>
+    <section class="tarjeta">
+      <div><h2>Tu pronóstico</h2><p class="nota">Deja de 1 a 3 fijos para el próximo sorteo. Puedes cambiarlo hasta 5 minutos antes.</p></div>
+      <div class="seg" id="sorteoGente" role="group" aria-label="Sorteo"></div>
+      <form id="formGente" class="form-gente">
+        <label for="apodo">Tu apodo <input type="text" id="apodo" maxlength="20" autocomplete="nickname" placeholder="Ej. El Guajiro" required></label>
+        <div class="fijos-in">
+          <label for="pg1">Fijo 1 <input type="text" id="pg1" inputmode="numeric" maxlength="2" placeholder="##" required></label>
+          <label for="pg2">Fijo 2 <input type="text" id="pg2" inputmode="numeric" maxlength="2" placeholder="##"></label>
+          <label for="pg3">Fijo 3 <input type="text" id="pg3" inputmode="numeric" maxlength="2" placeholder="##"></label>
+        </div>
+        <button type="submit" class="btn-prin" id="enviarGente">Guardar mi pronóstico</button>
+        <p class="nota" id="msgGente" role="status"></p>
+      </form>
+      <p class="nota">Solo se guarda tu apodo y tus números, y todo el que abra la app los ve. Sé respetuoso.</p>
+    </section>
+
+    <section class="tarjeta">
+      <div><h2>Lo que dice la gente</h2><p class="nota" id="genteNota"></p></div>
+      <ul class="lista" id="genteTop"></ul>
+      <div class="gente-lista" id="genteLista"></div>
+    </section>
+
+    <section class="tarjeta">
+      <div><h2>🏆 Los que más aciertan</h2><p class="nota">Últimos 30 días. Fijo = uno de sus números salió de fijo; corrido = salió en el Pick 4.</p></div>
+      <div style="overflow-x:auto"><table class="ultimos" id="genteRanking"></table></div>
+    </section>
+
+    <section class="tarjeta">
+      <div><h2>Sorteos anteriores</h2><p class="nota">Quién le pegó en cada sorteo.</p></div>
+      <div class="gente-lista" id="genteAntes"></div>
+    </section>
+  </div>
+
+  <div id="secMetodos" class="vista-in">
   <div class="seg" id="modoP" role="group" aria-label="Sorteo">
     <button type="button" data-v="M" aria-pressed="true">☀ Mediodía</button>
     <button type="button" data-v="T" aria-pressed="false">☾ Noche</button>
@@ -419,6 +474,7 @@ td.vacio { background: var(--bg); }
     <div style="overflow-x:auto"><table class="ultimos" id="aciertos"></table></div>
   </section>
   <p class="nota">Esto es entretenimiento. El Pick 3 sale al azar: ningún método sabe el próximo número, y la tabla de aciertos lo muestra.</p>
+  </div>
 </main>
 
 <!-- CHARADA -->
@@ -857,6 +913,147 @@ function pintarPronostico() {
   }).join("") + `</tbody>`;
 }
 
+/* ---------- PRONÓSTICOS DE LA GENTE ---------- */
+// Se guardan en el puente (Cloudflare, base de datos D1): solo apodo, números y un id al azar del teléfono
+const GENTE = { abiertos: [], elegido: null, recientes: [], mio: {}, miQuien: "" };
+const URL_GENTE = VIVO_URL.replace(/\/$/, "") + "/pronosticos";
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function dispositivo() {
+  try {
+    let d = localStorage.getItem("pick3-dispositivo");
+    if (!d) {
+      d = Array.from(crypto.getRandomValues(new Uint8Array(24)), b => "abcdefghijklmnopqrstuvwxyz0123456789"[b % 36]).join("");
+      localStorage.setItem("pick3-dispositivo", d);
+    }
+    return d;
+  } catch (e) {
+    return (window.__disp ??= Array.from({ length: 24 }, () => "abcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 36)]).join(""));
+  }
+}
+async function huellaDe(t) {
+  try {
+    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t));
+    return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
+  } catch (e) { return ""; }
+}
+try { GENTE.mio = JSON.parse(localStorage.getItem("pick3-mios") || "{}"); $("apodo").value = localStorage.getItem("pick3-apodo") || ""; } catch (e) {}
+huellaDe(dispositivo()).then(h => { GENTE.miQuien = h.slice(0, 10); });
+const nombreSorteo = a => `${a.sorteo === "M" ? "☀ Mediodía" : "☾ Noche"} ${textoCorto(a.fecha).split(" ").slice(0, 2).join(" ")}`;
+const claveS = a => a.fecha + "|" + a.sorteo;
+const descSorteo = a => `sorteo de ${a.sorteo === "M" ? "mediodía" : "noche"} del ${textoCorto(a.fecha).split(" ").slice(0, 2).join(" ").toLowerCase()}`;
+
+async function cargarGente() {
+  try {
+    const r = await fetch(URL_GENTE + "/recientes?dias=30&t=" + Date.now(), { cache: "no-store" });
+    const j = await r.json();
+    GENTE.abiertos = j.abiertos || [];
+    GENTE.recientes = j.lista || [];
+    if (!GENTE.elegido || !GENTE.abiertos.some(a => claveS(a) === claveS(GENTE.elegido))) GENTE.elegido = GENTE.abiertos[0] || null;
+  } catch (e) {
+    $("genteNota").textContent = "No se pudieron cargar los pronósticos. Revisa la conexión.";
+  }
+  pintarGente();
+}
+
+function aciertoDe(p) {
+  const i = p.sorteo === "M" ? 0 : 1, n3 = (DATA[p.fecha] || [])[i], n4 = (DATA4[p.fecha] || [])[i];
+  if (!n3) return null;
+  const fijo = n3.slice(1), cor = n4 ? [n4.slice(0, 2), n4.slice(2)] : [];
+  return { fijo, cor, deFijo: p.numeros.includes(fijo), deCorrido: p.numeros.some(n => cor.includes(n)) };
+}
+
+function pintarGente() {
+  $("sorteoGente").innerHTML = GENTE.abiertos.map(a => `<button type="button" data-k="${claveS(a)}" aria-pressed="${!!GENTE.elegido && claveS(a) === claveS(GENTE.elegido)}">${nombreSorteo(a)}</button>`).join("");
+  const el = GENTE.elegido, yo = GENTE.miQuien;
+  if (el) {
+    const mio = GENTE.mio[claveS(el)];
+    ["pg1", "pg2", "pg3"].forEach((id, i) => { if (document.activeElement !== $(id)) $(id).value = mio ? (mio[i] || "") : ""; });
+    $("enviarGente").textContent = mio ? "Cambiar mi pronóstico" : "Guardar mi pronóstico";
+
+    const delSorteo = GENTE.recientes.filter(p => p.fecha === el.fecha && p.sorteo === el.sorteo);
+    const cuenta = {};
+    delSorteo.forEach(p => p.numeros.forEach(n => cuenta[n] = (cuenta[n] || 0) + 1));
+    const top = Object.entries(cuenta).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 6);
+    const maxV = top.length ? top[0][1] : 1;
+    $("genteNota").textContent = delSorteo.length
+      ? `${delSorteo.length} ${delSorteo.length === 1 ? "persona dejó" : "personas dejaron"} su pronóstico para el ${descSorteo(el)}. Los más elegidos:`
+      : `Todavía nadie dejó su pronóstico para este sorteo. ¡Sé el primero!`;
+    $("genteTop").innerHTML = top.map(([n, v], i) => itemLista("fijo", n, `${v} ${v === 1 ? "persona" : "personas"}`, "", 100 * v / maxV, i === 0)).join("");
+    $("genteLista").innerHTML = delSorteo.slice().reverse().slice(0, 60).map(p => `<div class="persona${p.quien === yo ? " yo" : ""}"><b>${esc(p.nombre)}${p.quien === yo ? " (tú)" : ""}</b>${p.numeros.map(n => `<span class="bola mini">${n}</span>`).join("")}</div>`).join("");
+  } else {
+    $("genteNota").textContent = "No hay sorteo abierto ahora mismo.";
+  }
+
+  // Ranking de 30 días: primero quien más fijos acertó, luego corridos, luego quien jugó menos
+  const por = {};
+  for (const p of GENTE.recientes) {
+    const a = aciertoDe(p);
+    if (!a) continue;
+    const x = (por[p.quien] ??= { nombre: p.nombre, jugados: 0, fijo: 0, corrido: 0 });
+    x.nombre = p.nombre; x.jugados++;
+    if (a.deFijo) x.fijo++; else if (a.deCorrido) x.corrido++;
+  }
+  const filas = Object.entries(por).sort((a, b) => b[1].fijo - a[1].fijo || b[1].corrido - a[1].corrido || a[1].jugados - b[1].jugados).slice(0, 10);
+  $("genteRanking").innerHTML = filas.length
+    ? `<thead><tr><th>#</th><th>Apodo</th><th>Fijo</th><th>Corrido</th><th>Jugó</th></tr></thead><tbody>` +
+      filas.map(([q, x], i) => `<tr><td>${["🥇", "🥈", "🥉"][i] || i + 1}</td><td><b>${esc(x.nombre)}</b>${q === yo ? " (tú)" : ""}</td><td class="num">${x.fijo}</td><td class="num">${x.corrido}</td><td class="cor">${x.jugados}</td></tr>`).join("") + "</tbody>"
+    : `<tbody><tr><td class="cor">Todavía no hay sorteos con pronósticos.</td></tr></tbody>`;
+
+  // Sorteos anteriores: quién acertó
+  const grupos = {};
+  for (const p of GENTE.recientes) if (aciertoDe(p)) (grupos[claveS(p)] ??= []).push(p);
+  $("genteAntes").innerHTML = Object.keys(grupos).sort().reverse().slice(0, 10).map(k => {
+    const [f, s] = k.split("|"), a = aciertoDe(grupos[k][0]);
+    const ganan = grupos[k].filter(p => aciertoDe(p).deFijo), corren = grupos[k].filter(p => !aciertoDe(p).deFijo && aciertoDe(p).deCorrido);
+    return `<div class="antes"><h3>${nombreSorteo({ fecha: f, sorteo: s })} · <span class="bola mini">${a.fijo}</span>${a.cor.map(c => `<span class="bola mini par">${c}</span>`).join("")}</h3>
+      <span class="nota">${grupos[k].length} ${grupos[k].length === 1 ? "pronóstico" : "pronósticos"} · ${ganan.length ? `🎯 de fijo: <b>${ganan.map(p => esc(p.nombre)).join(", ")}</b>` : "nadie acertó el fijo"}${corren.length ? ` · de corrido: <b>${corren.map(p => esc(p.nombre)).join(", ")}</b>` : ""}</span></div>`;
+  }).join("") || `<p class="nota">Aquí saldrán los resultados cuando haya sorteos con pronósticos.</p>`;
+}
+
+async function enviarPronostico(e) {
+  e.preventDefault();
+  const el = GENTE.elegido, msg = $("msgGente");
+  msg.className = "nota";
+  if (!el) { msg.textContent = "No hay sorteo abierto ahora mismo."; return; }
+  const numeros = ["pg1", "pg2", "pg3"].map(id => $(id).value.trim()).filter(Boolean).map(n => n.padStart(2, "0"));
+  if (!numeros.length || numeros.some(n => !/^\d{2}$/.test(n))) { msg.className = "nota mal"; msg.textContent = "Escribe fijos del 00 al 99."; return; }
+  $("enviarGente").disabled = true;
+  try {
+    const r = await fetch(URL_GENTE, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fecha: el.fecha, sorteo: el.sorteo, nombre: $("apodo").value.trim(), numeros, dispositivo: dispositivo() }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "No se pudo guardar.");
+    GENTE.mio[claveS(el)] = j.numeros;
+    try { localStorage.setItem("pick3-mios", JSON.stringify(GENTE.mio)); localStorage.setItem("pick3-apodo", j.nombre); } catch (e2) {}
+    msg.className = "nota ok";
+    msg.textContent = `Guardado: ${j.numeros.join(" · ")} para el ${descSorteo(el)}.`;
+    await cargarGente();
+  } catch (err) {
+    msg.className = "nota mal";
+    msg.textContent = err.message === "Failed to fetch" ? "Sin conexión. Prueba otra vez." : err.message;
+  } finally {
+    $("enviarGente").disabled = false;
+  }
+}
+
+$("formGente").addEventListener("submit", enviarPronostico);
+["pg1", "pg2", "pg3"].forEach(id => $(id).addEventListener("input", () => { $(id).value = $(id).value.replace(/\D/g, "").slice(0, 2); }));
+$("sorteoGente").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  GENTE.elegido = GENTE.abiertos.find(a => claveS(a) === b.dataset.k);
+  $("msgGente").textContent = "";
+  pintarGente();
+});
+$("subPro").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  document.querySelectorAll("#subPro button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  $("secGente").hidden = b.dataset.v !== "gente";
+  $("secMetodos").hidden = b.dataset.v !== "metodos";
+  if (b.dataset.v === "gente") cargarGente();
+});
+
 /* ---------- HOY ---------- */
 function bolasFijo(n3) {
   if (!n3) return `<div class="bolas"><span class="bola cen vacia">?</span><span class="bola vacia">?</span><span class="bola vacia">?</span></div>`;
@@ -1080,7 +1277,7 @@ function pintarVista() {
   if (PREF.vista === "calendario") pintarCalendario();
   if (PREF.vista === "analisis") pintarAnalisis();
   if (PREF.vista === "charada") { pintarCharada(); pintarCompas(); pintarTablaCompas(); }
-  if (PREF.vista === "pronostico") pintarPronostico();
+  if (PREF.vista === "pronostico") { pintarPronostico(); if (!$("secGente").hidden) pintarGente(); }
 }
 function irA(v) {
   if (!VISTAS.includes(v)) v = "hoy";
