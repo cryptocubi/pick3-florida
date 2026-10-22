@@ -162,16 +162,16 @@ async function pronosticos(request, env, cors) {
   if (request.method === "GET" && url.pathname === "/pronosticos") {
     const fecha = url.searchParams.get("fecha"), sorteo = url.searchParams.get("sorteo");
     if (!fechaOk(fecha) || !["M", "T"].includes(sorteo)) return json({ error: "Falta fecha o sorteo" }, cors, 400);
-    const { results } = await env.DB.prepare("SELECT nombre, numeros, creado, dispositivo FROM pronosticos WHERE fecha = ? AND sorteo = ? ORDER BY creado DESC LIMIT 500").bind(fecha, sorteo).all();
-    const lista = await Promise.all(results.map(async r => ({ nombre: r.nombre, numeros: r.numeros.split(","), creado: r.creado, quien: (await huella(r.dispositivo)).slice(0, 10) })));
+    const { results } = await env.DB.prepare("SELECT p.id, p.nombre, p.numeros, p.creado, p.dispositivo FROM pronosticos p WHERE p.fecha = ? AND p.sorteo = ? AND (SELECT COUNT(*) FROM reportes r WHERE r.pronostico_id = p.id) < 3 ORDER BY p.creado DESC LIMIT 500").bind(fecha, sorteo).all();
+    const lista = await Promise.all(results.map(async r => ({ id: r.id, nombre: r.nombre, numeros: r.numeros.split(","), creado: r.creado, quien: (await huella(r.dispositivo)).slice(0, 10) })));
     return json({ fecha, sorteo, abiertos: abiertos(), lista }, cors);
   }
 
   if (request.method === "GET" && url.pathname === "/pronosticos/recientes") {
     const dias = Math.min(90, Math.max(1, +url.searchParams.get("dias") || 30));
     const desde = fechaFlorida(dias).iso;
-    const { results } = await env.DB.prepare("SELECT fecha, sorteo, nombre, numeros, dispositivo FROM pronosticos WHERE fecha >= ? ORDER BY fecha LIMIT 20000").bind(desde).all();
-    const lista = await Promise.all(results.map(async r => ({ fecha: r.fecha, sorteo: r.sorteo, nombre: r.nombre, numeros: r.numeros.split(","), quien: (await huella(r.dispositivo)).slice(0, 10) })));
+    const { results } = await env.DB.prepare("SELECT p.id, p.fecha, p.sorteo, p.nombre, p.numeros, p.dispositivo FROM pronosticos p WHERE p.fecha >= ? AND (SELECT COUNT(*) FROM reportes r WHERE r.pronostico_id = p.id) < 3 ORDER BY p.fecha LIMIT 20000").bind(desde).all();
+    const lista = await Promise.all(results.map(async r => ({ id: r.id, fecha: r.fecha, sorteo: r.sorteo, nombre: r.nombre, numeros: r.numeros.split(","), quien: (await huella(r.dispositivo)).slice(0, 10) })));
     return json({ desde, abiertos: abiertos(), lista }, cors);
   }
 
@@ -195,6 +195,40 @@ async function pronosticos(request, env, cors) {
       ON CONFLICT (fecha, sorteo, dispositivo) DO UPDATE SET nombre = excluded.nombre, numeros = excluded.numeros, ip = excluded.ip, creado = excluded.creado`)
       .bind(fecha, sorteo, nom.nombre, dispositivo, numeros.join(","), ip, new Date().toISOString()).run();
     return json({ ok: true, fecha, sorteo, nombre: nom.nombre, numeros }, cors);
+  }
+  // Reportar un pronóstico ofensivo: con 3 reportes de teléfonos distintos deja de verse
+  if (request.method === "POST" && url.pathname === "/pronosticos/reportar") {
+    let b;
+    try { b = await request.json(); } catch { return json({ error: "No entendí el reporte." }, cors, 400); }
+    const id = +b?.id, dispositivo = b?.dispositivo || "", motivo = String(b?.motivo || "ofensivo").slice(0, 40);
+    if (!Number.isInteger(id) || id < 1) return json({ error: "Falta el pronóstico." }, cors, 400);
+    if (!/^[a-z0-9]{16,40}$/.test(dispositivo)) return json({ error: "Falta el identificador del teléfono." }, cors, 400);
+    const existe = await env.DB.prepare("SELECT id FROM pronosticos WHERE id = ?").bind(id).first();
+    if (!existe) return json({ error: "Ese pronóstico ya no existe." }, cors, 404);
+    await env.DB.prepare("INSERT OR IGNORE INTO reportes (pronostico_id, dispositivo, motivo, creado) VALUES (?, ?, ?, ?)")
+      .bind(id, dispositivo, motivo, new Date().toISOString()).run();
+    return json({ ok: true }, cors);
+  }
+
+  // Borrar mi propio pronóstico
+  if (request.method === "POST" && url.pathname === "/pronosticos/borrar") {
+    let b;
+    try { b = await request.json(); } catch { return json({ error: "No entendí la petición." }, cors, 400); }
+    const { fecha, sorteo, dispositivo } = b || {};
+    if (!fechaOk(fecha) || !["M", "T"].includes(sorteo) || !/^[a-z0-9]{16,40}$/.test(dispositivo || "")) return json({ error: "Faltan datos." }, cors, 400);
+    const r = await env.DB.prepare("DELETE FROM pronosticos WHERE fecha = ? AND sorteo = ? AND dispositivo = ?").bind(fecha, sorteo, dispositivo).run();
+    return json({ ok: true, borrados: r.meta?.changes ?? 0 }, cors);
+  }
+
+  // Borrar todo lo de este teléfono (lo piden las tiendas: el usuario puede eliminar sus datos)
+  if (request.method === "POST" && url.pathname === "/pronosticos/borrar-todo") {
+    let b;
+    try { b = await request.json(); } catch { return json({ error: "No entendí la petición." }, cors, 400); }
+    const dispositivo = b?.dispositivo || "";
+    if (!/^[a-z0-9]{16,40}$/.test(dispositivo)) return json({ error: "Faltan datos." }, cors, 400);
+    const r = await env.DB.prepare("DELETE FROM pronosticos WHERE dispositivo = ?").bind(dispositivo).run();
+    await env.DB.prepare("DELETE FROM reportes WHERE dispositivo = ?").bind(dispositivo).run();
+    return json({ ok: true, borrados: r.meta?.changes ?? 0 }, cors);
   }
   return json({ error: "No encontrado" }, cors, 404);
 }

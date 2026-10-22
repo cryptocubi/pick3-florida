@@ -12,3 +12,14 @@ CREATE TABLE IF NOT EXISTS pronosticos (
 );
 CREATE INDEX IF NOT EXISTS idx_sorteo ON pronosticos (fecha, sorteo);
 CREATE INDEX IF NOT EXISTS idx_ip ON pronosticos (ip, creado);
+
+-- Reportes de pronósticos ofensivos (con 3 de teléfonos distintos, el pronóstico se esconde)
+CREATE TABLE IF NOT EXISTS reportes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  pronostico_id INTEGER NOT NULL,
+  dispositivo TEXT NOT NULL,
+  motivo TEXT NOT NULL,
+  creado TEXT NOT NULL,
+  UNIQUE (pronostico_id, dispositivo)
+);
+CREATE INDEX IF NOT EXISTS idx_rep ON reportes (pronostico_id);

@@ -242,6 +242,16 @@ td.vacio { background: var(--bg); }
 .extras .grupos span { font: 700 14px var(--font-num); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
 .ok { color: #16a34a; font-weight: 800; }
 .vista-in { display: grid; gap: 14px; }
+.check { display: flex !important; gap: 8px; align-items: flex-start; font-weight: 600 !important; }
+.check input { width: 18px; height: 18px; margin-top: 2px; flex: none; accent-color: var(--accent); }
+.persona details { position: relative; }
+.persona summary { list-style: none; cursor: pointer; padding: 2px 8px; border-radius: 8px; color: var(--muted); font-weight: 800; }
+.persona summary::-webkit-details-marker { display: none; }
+.persona .menu { position: absolute; right: 0; top: 28px; z-index: 3; display: grid; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); min-width: 180px; }
+.persona .menu button { text-align: left; border: 0; background: transparent; padding: 8px 10px; border-radius: 8px; font-size: 14px; font-weight: 600; }
+.persona .menu button:hover { background: var(--surface-2); }
+#v-acerca p { margin: 0; }
+#v-acerca a { color: var(--accent); }
 .video-marco { position: relative; width: 100%; aspect-ratio: 16 / 9; max-width: 100%; border-radius: 14px; overflow: hidden; background: #000; border: 0; padding: 0; display: block; }
 .video-marco img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0.85; }
 .video-marco iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
@@ -293,6 +303,7 @@ td.vacio { background: var(--bg); }
   <div class="barra-in">
     <div class="marca"><b>Pick 3 Florida</b><span id="fechaHoy">Cargando…</span></div>
     <span class="pill" id="pillVivo"><i></i><span>Cargando</span></span>
+    <a class="btn-ico" href="#acerca" aria-label="Acerca de la app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></a>
     <button type="button" class="btn-ico" id="refrescar" aria-label="Buscar números nuevos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
     </button>
@@ -405,10 +416,12 @@ td.vacio { background: var(--bg); }
           <label for="pg2">Fijo 2 <input type="text" id="pg2" inputmode="numeric" maxlength="2" placeholder="##"></label>
           <label for="pg3">Fijo 3 <input type="text" id="pg3" inputmode="numeric" maxlength="2" placeholder="##"></label>
         </div>
+        <label class="check" for="aceptoNormas"><input type="checkbox" id="aceptoNormas"> Acepto las <a href="condiciones.html">normas</a>: apodo respetuoso, nada ofensivo, y soy mayor de 18 años.</label>
         <button type="submit" class="btn-prin" id="enviarGente">Guardar mi pronóstico</button>
+        <button type="button" class="btn" id="borrarMio" hidden>Borrar mi pronóstico de este sorteo</button>
         <p class="nota" id="msgGente" role="status"></p>
       </form>
-      <p class="nota">Solo se guarda tu apodo y tus números, y todo el que abra la app los ve. Sé respetuoso.</p>
+      <p class="nota">Solo se guarda tu apodo y tus números, y todo el que abra la app los ve. Si ves algo ofensivo, toca ⋯ para reportarlo u ocultar a esa persona.</p>
     </section>
 
     <section class="tarjeta">
@@ -519,6 +532,32 @@ td.vacio { background: var(--bg); }
       <div class="tabla-compas" id="tablaCompas"></div>
     </section>
   </div>
+</main>
+
+<!-- ACERCA DE -->
+<main class="vista" id="v-acerca" hidden>
+  <section class="tarjeta">
+    <h2>Acerca de esta app</h2>
+    <p>Resultados, historial y estadísticas del Pick 3 y del Pick 4 de Florida, en español. Es gratis, no vende billetes, no recibe apuestas y no maneja dinero.</p>
+    <p class="nota"><b>No es una app oficial.</b> No está afiliada ni respaldada por la Lotería de Florida. Si hay alguna diferencia, mandan los registros oficiales de la Lotería de Florida: <a href="https://floridalottery.com" target="_blank" rel="noopener">floridalottery.com</a>.</p>
+    <p class="nota">Los pronósticos y estadísticas son entretenimiento: cada sorteo es al azar y ningún método sabe el próximo número.</p>
+  </section>
+  <section class="tarjeta">
+    <h2>Juega con responsabilidad</h2>
+    <p>Solo para mayores de 18 años. Si el juego te causa problemas, llama gratis y en confianza al <b>1-888-ADMIT-IT</b> (1-888-236-4848), las 24 horas.</p>
+  </section>
+  <section class="tarjeta">
+    <h2>Tus datos</h2>
+    <p class="nota">No hace falta cuenta. Si dejas un pronóstico se guarda tu apodo, tus números y un número al azar de este teléfono. Puedes borrarlo todo cuando quieras.</p>
+    <button type="button" class="btn" id="borrarTodo">Borrar todos mis pronósticos</button>
+    <p class="nota" id="msgBorrar" role="status"></p>
+    <p class="nota"><a href="privacidad.html">Política de privacidad</a> · <a href="condiciones.html">Condiciones y normas</a></p>
+  </section>
+  <section class="tarjeta">
+    <h2>Contacto</h2>
+    <p>¿Ves algo ofensivo, un error o tienes una idea? Escribe a <b>soporte@mmbapps.com</b>.</p>
+    <p class="nota">MMB Apps · Martinez Mulet Business Services LLC · Florida</p>
+  </section>
 </main>
 
 <nav class="tabs" aria-label="Pantallas">
@@ -953,7 +992,14 @@ async function huellaDe(t) {
     return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
   } catch (e) { return ""; }
 }
-try { GENTE.mio = JSON.parse(localStorage.getItem("pick3-mios") || "{}"); $("apodo").value = localStorage.getItem("pick3-apodo") || ""; } catch (e) {}
+GENTE.ocultos = [];
+try {
+  GENTE.mio = JSON.parse(localStorage.getItem("pick3-mios") || "{}");
+  GENTE.ocultos = JSON.parse(localStorage.getItem("pick3-ocultos") || "[]");
+  $("apodo").value = localStorage.getItem("pick3-apodo") || "";
+  $("aceptoNormas").checked = localStorage.getItem("pick3-normas") === "1";
+} catch (e) {}
+const visible = p => !GENTE.ocultos.includes(p.quien);
 huellaDe(dispositivo()).then(h => { GENTE.miQuien = h.slice(0, 10); });
 const nombreSorteo = a => `${a.sorteo === "M" ? "☀ Mediodía" : "☾ Noche"} ${textoCorto(a.fecha).split(" ").slice(0, 2).join(" ")}`;
 const claveS = a => a.fecha + "|" + a.sorteo;
@@ -964,7 +1010,7 @@ async function cargarGente() {
     const r = await fetch(URL_GENTE + "/recientes?dias=30&t=" + Date.now(), { cache: "no-store" });
     const j = await r.json();
     GENTE.abiertos = j.abiertos || [];
-    GENTE.recientes = j.lista || [];
+    GENTE.recientes = (j.lista || []).filter(visible);
     if (!GENTE.elegido || !GENTE.abiertos.some(a => claveS(a) === claveS(GENTE.elegido))) GENTE.elegido = GENTE.abiertos[0] || null;
   } catch (e) {
     $("genteNota").textContent = "No se pudieron cargar los pronósticos. Revisa la conexión.";
@@ -986,6 +1032,7 @@ function pintarGente() {
     const mio = GENTE.mio[claveS(el)];
     ["pg1", "pg2", "pg3"].forEach((id, i) => { if (document.activeElement !== $(id)) $(id).value = mio ? (mio[i] || "") : ""; });
     $("enviarGente").textContent = mio ? "Cambiar mi pronóstico" : "Guardar mi pronóstico";
+    $("borrarMio").hidden = !mio;
 
     const delSorteo = GENTE.recientes.filter(p => p.fecha === el.fecha && p.sorteo === el.sorteo);
     const cuenta = {};
@@ -996,7 +1043,7 @@ function pintarGente() {
       ? `${delSorteo.length} ${delSorteo.length === 1 ? "persona dejó" : "personas dejaron"} su pronóstico para el ${descSorteo(el)}. Los más elegidos:`
       : `Todavía nadie dejó su pronóstico para este sorteo. ¡Sé el primero!`;
     $("genteTop").innerHTML = top.map(([n, v], i) => itemLista("fijo", n, `${v} ${v === 1 ? "persona" : "personas"}`, "", 100 * v / maxV, i === 0)).join("");
-    $("genteLista").innerHTML = delSorteo.slice().reverse().slice(0, 60).map(p => `<div class="persona${p.quien === yo ? " yo" : ""}"><b>${esc(p.nombre)}${p.quien === yo ? " (tú)" : ""}</b>${p.numeros.map(n => `<span class="bola mini">${n}</span>`).join("")}</div>`).join("");
+    $("genteLista").innerHTML = delSorteo.slice().reverse().slice(0, 60).map(p => `<div class="persona${p.quien === yo ? " yo" : ""}"><b>${esc(p.nombre)}${p.quien === yo ? " (tú)" : ""}</b>${p.numeros.map(n => `<span class="bola mini">${n}</span>`).join("")}${p.quien === yo ? "" : `<details><summary aria-label="Opciones">⋯</summary><div class="menu"><button type="button" data-reportar="${p.id}">🚩 Reportar como ofensivo</button><button type="button" data-ocultar="${p.quien}">🙈 Ocultar a esta persona</button></div></details>`}</div>`).join("");
   } else {
     $("genteNota").textContent = "No hay sorteo abierto ahora mismo.";
   }
@@ -1032,6 +1079,8 @@ async function enviarPronostico(e) {
   const el = GENTE.elegido, msg = $("msgGente");
   msg.className = "nota";
   if (!el) { msg.textContent = "No hay sorteo abierto ahora mismo."; return; }
+  if (!$("aceptoNormas").checked) { msg.className = "nota mal"; msg.textContent = "Para guardar, marca que aceptas las normas."; return; }
+  try { localStorage.setItem("pick3-normas", "1"); } catch (e2) {}
   const numeros = ["pg1", "pg2", "pg3"].map(id => $(id).value.trim()).filter(Boolean).map(n => n.padStart(2, "0"));
   if (!numeros.length || numeros.some(n => !/^\d{2}$/.test(n))) { msg.className = "nota mal"; msg.textContent = "Escribe fijos del 00 al 99."; return; }
   $("enviarGente").disabled = true;
@@ -1056,6 +1105,47 @@ async function enviarPronostico(e) {
 }
 
 $("formGente").addEventListener("submit", enviarPronostico);
+async function postGente(ruta, cuerpo) {
+  const r = await fetch(URL_GENTE + ruta, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cuerpo) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || "No se pudo hacer.");
+  return j;
+}
+$("genteLista").addEventListener("click", async e => {
+  const rb = e.target.closest("[data-reportar]"), ob = e.target.closest("[data-ocultar]");
+  if (rb) {
+    try { await postGente("/reportar", { id: +rb.dataset.reportar, dispositivo: dispositivo() }); rb.closest("details").open = false; $("msgGente").className = "nota ok"; $("msgGente").textContent = "Gracias. Lo revisamos; con varios reportes se oculta solo."; }
+    catch (err) { $("msgGente").className = "nota mal"; $("msgGente").textContent = err.message; }
+  }
+  if (ob) {
+    GENTE.ocultos.push(ob.dataset.ocultar);
+    try { localStorage.setItem("pick3-ocultos", JSON.stringify(GENTE.ocultos)); } catch (e2) {}
+    GENTE.recientes = GENTE.recientes.filter(visible);
+    pintarGente();
+  }
+});
+$("borrarMio").addEventListener("click", async () => {
+  const el = GENTE.elegido; if (!el) return;
+  try {
+    await postGente("/borrar", { fecha: el.fecha, sorteo: el.sorteo, dispositivo: dispositivo() });
+    delete GENTE.mio[claveS(el)];
+    try { localStorage.setItem("pick3-mios", JSON.stringify(GENTE.mio)); } catch (e2) {}
+    $("msgGente").className = "nota ok"; $("msgGente").textContent = "Tu pronóstico de este sorteo se borró.";
+    await cargarGente();
+  } catch (err) { $("msgGente").className = "nota mal"; $("msgGente").textContent = err.message; }
+});
+// Borrar todo pide confirmar con un segundo toque (los diálogos del navegador no sirven en todas partes)
+$("borrarTodo").addEventListener("click", async () => {
+  const b = $("borrarTodo"), msg = $("msgBorrar");
+  if (!b.dataset.seguro) { b.dataset.seguro = "1"; b.textContent = "Toca otra vez para borrar todo"; msg.textContent = "Se borrarán todos tus pronósticos de todos los sorteos."; return; }
+  delete b.dataset.seguro; b.textContent = "Borrar todos mis pronósticos";
+  try {
+    const j = await postGente("/borrar-todo", { dispositivo: dispositivo() });
+    GENTE.mio = {};
+    try { localStorage.removeItem("pick3-mios"); } catch (e2) {}
+    msg.textContent = j.borrados ? `Listo: se borraron ${j.borrados} ${j.borrados === 1 ? "pronóstico" : "pronósticos"}.` : "No tenías pronósticos guardados.";
+  } catch (err) { msg.textContent = err.message === "Failed to fetch" ? "Sin conexión. Prueba otra vez." : err.message; }
+});
 ["pg1", "pg2", "pg3"].forEach(id => $(id).addEventListener("input", () => { $(id).value = $(id).value.replace(/\D/g, "").slice(0, 2); }));
 $("sorteoGente").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
@@ -1345,7 +1435,7 @@ function pintarCalendario() {
 /* ---------- ESTADO Y PANTALLAS ---------- */
 function pintarBarra() {
   const { fecha } = ahoraFlorida();
-  $("fechaHoy").textContent = textoFecha(fecha) + " · Florida";
+  $("fechaHoy").textContent = textoFecha(fecha);
   const vivoOk = VIVO_HORA && Date.now() - new Date(VIVO_HORA) < 10 * 60000;
   const pill = $("pillVivo");
   pill.classList.toggle("activo", !!vivoOk && enHoraDeSorteo());
@@ -1353,7 +1443,7 @@ function pintarBarra() {
   pill.querySelector("span").textContent = vivoOk ? (enHoraDeSorteo() ? "En vivo" : "Al día · " + hora(VIVO_HORA)) : ACTUALIZADO ? "Historial" : "Sin conexión";
 }
 
-const VISTAS = ["hoy", "calendario", "analisis", "pronostico", "charada"];
+const VISTAS = ["hoy", "calendario", "analisis", "pronostico", "charada", "acerca"];
 function pintarVista() {
   if (!FECHAS.length) return;
   pintarBarra();
