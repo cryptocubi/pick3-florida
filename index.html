@@ -242,6 +242,17 @@ td.vacio { background: var(--bg); }
 .extras .grupos span { font: 700 14px var(--font-num); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
 .ok { color: #16a34a; font-weight: 800; }
 .vista-in { display: grid; gap: 14px; }
+.video-marco { position: relative; width: 100%; aspect-ratio: 16 / 9; max-width: 100%; border-radius: 14px; overflow: hidden; background: #000; border: 0; padding: 0; display: block; }
+.video-marco img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0.85; }
+.video-marco iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-marco .play { position: absolute; inset: 0; display: grid; place-items: center; }
+.video-marco .play i { width: 68px; height: 48px; border-radius: 14px; background: #dc2626; display: grid; place-items: center; box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+.video-marco .play i::after { content: ""; border-style: solid; border-width: 11px 0 11px 18px; border-color: transparent transparent transparent #fff; margin-left: 4px; }
+.video-marco .tit { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 12px 10px; color: #fff; font-weight: 800; font-size: 14px; text-align: left; background: linear-gradient(transparent, rgba(0,0,0,0.75)); }
+.video-espera { display: grid; place-items: center; gap: 6px; text-align: center; aspect-ratio: 16 / 9; border-radius: 14px; background: var(--surface-2); border: 1px dashed var(--line); padding: 16px; }
+.video-espera b { font-size: 16px; }
+.ver-video { justify-self: center; border: 0; border-radius: 999px; padding: 8px 16px; font-weight: 800; font-size: 14px; color: #fff; background: #dc2626; }
+.mini-play { border: 0; background: transparent; color: #dc2626; font-size: 15px; padding: 0 2px; cursor: pointer; }
 .form-gente { display: grid; gap: 10px; }
 .form-gente label { display: grid; gap: 4px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .form-gente input { font-size: 17px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); min-width: 0; }
@@ -291,6 +302,11 @@ td.vacio { background: var(--bg); }
 <!-- HOY -->
 <main class="vista" id="v-hoy">
   <div class="sorteos" id="sorteosHoy"></div>
+  <section class="tarjeta" id="videoHoy">
+    <div><h2>📺 Ver el sorteo</h2><p class="nota">Video oficial de la Lotería de Florida. Sale unos 4 minutos después de cada sorteo, antes que el número en las páginas de resultados.</p></div>
+    <div class="chips" id="videoChips" role="group" aria-label="Sorteo"></div>
+    <div id="videoCaja"></div>
+  </section>
   <section class="tarjeta">
     <h2>Últimos días</h2>
     <div style="overflow-x:auto"><table class="ultimos" id="ultimos"></table></div>
@@ -638,6 +654,7 @@ const HORA_M = 13 * 60 + 30, HORA_T = 21 * 60 + 45;
 const URL_HIST = "historico.json";
 
 let BASE = {}, BASE4 = {}, VIVO = {}, VIVO4 = {}, DATA = {}, DATA4 = {}, FECHAS = [];
+let VIDEOS = {}; // {"AAAA-MM-DD": [idMediodía|null, idNoche|null]} de YouTube
 let ACTUALIZADO = null, VIVO_HORA = null, semanas = [];
 const PREF = { vista: "hoy", modo: "G", catAtr: "fijo", catMas: "fijo", todosAtr: false };
 
@@ -1068,7 +1085,8 @@ function pintarHoy() {
   const r3 = DATA[hoy] || [null, null], r4 = DATA4[hoy] || [null, null];
   $("sorteosHoy").innerHTML = [["m", "Mediodía", "1:30 pm", ICO_SOL, HORA_M], ["t", "Noche", "9:45 pm", ICO_LUNA, HORA_T]].map(([c, nombre, hora, ico, min], i) => {
     const n3 = r3[i], n4 = r4[i];
-    const estado = n3 ? "Ya salió" : minutos < min ? faltan(min - minutos) : "Esperando…";
+    const vid = (VIDEOS[hoy] || [])[i];
+    const estado = n3 ? "Ya salió" : vid ? "Video listo ▶" : minutos < min ? faltan(min - minutos) : "Esperando…";
     const fijo = n3 ? n3.slice(1) : null;
     return `<section class="tarjeta sorteo ${c}">
       <div class="cab"><span class="ico">${ico}</span><div><h2>${nombre}</h2><small>${hora} · hora de Florida</small></div><span class="estado">${estado}</span></div>
@@ -1078,16 +1096,82 @@ function pintarHoy() {
         <span class="significado">${n4 ? `<b>${n4.slice(0, 2)}</b> ${charada(n4.slice(0, 2))} · <b>${n4.slice(2)}</b> ${charada(n4.slice(2))}` : "Del Pick 4 del mismo sorteo"}</span></div>
       ${n3 && n4 ? `<div class="bloque extras"><span class="etq">Parlés</span><div class="grupos"><span>${fijo} · ${n4.slice(0, 2)}</span><span>${n4.slice(0, 2)} · ${n4.slice(2)}</span><span>${fijo} · ${n4.slice(2)}</span></div>
         <span class="etq">Candado</span><div class="grupos"><span>${fijo} · ${n4.slice(0, 2)} · ${n4.slice(2)}</span></div></div>` : ""}
+      ${vid ? `<button type="button" class="ver-video" data-k="${hoy}|${i}">▶ Ver el sorteo</button>` : ""}
     </section>`;
   }).join("");
 
   const filas = FECHAS.slice(-8).reverse().map(f => {
     const a = DATA[f] || [], b = DATA4[f] || [];
-    const lado = (n3, n4) => n3 ? `<span class="num">${n3.slice(1)}</span> <span class="cor">${n3[0]} · ${n4 ? n4.slice(0, 2) + " " + n4.slice(2) : "–"}</span>` : `<span class="cor">${f === hoy ? "pendiente" : "–"}</span>`;
-    return `<tr><td>${textoCorto(f)}</td><td>${lado(a[0], b[0])}</td><td>${lado(a[1], b[1])}</td></tr>`;
+    const v = VIDEOS[f] || [];
+    const play = i => v[i] ? ` <button type="button" class="mini-play" data-k="${f}|${i}" aria-label="Ver el video del sorteo">▶</button>` : "";
+    const lado = (n3, n4, i) => n3 ? `<span class="num">${n3.slice(1)}</span> <span class="cor">${n3[0]} · ${n4 ? n4.slice(0, 2) + " " + n4.slice(2) : "–"}</span>${play(i)}` : `<span class="cor">${f === hoy ? "pendiente" : "–"}</span>${play(i)}`;
+    return `<tr><td>${textoCorto(f)}</td><td>${lado(a[0], b[0], 0)}</td><td>${lado(a[1], b[1], 1)}</td></tr>`;
   }).join("");
   $("ultimos").innerHTML = `<thead><tr><th>Día</th><th><span class="cm">☀</span> Mediodía</th><th><span class="ct">☾</span> Noche</th></tr></thead><tbody>${filas}</tbody>`;
+  pintarVideo();
 }
+
+/* ---------- VIDEO DEL SORTEO ---------- */
+// La caja de video solo se vuelve a dibujar si cambia algo, para no cortar un video que se está viendo
+const VID = { elegido: null, viendo: null, firma: "", manual: false };
+function sorteosConVideo() {
+  const lista = [];
+  for (const f of Object.keys(VIDEOS).sort().reverse()) for (const i of [1, 0]) if (VIDEOS[f][i]) lista.push({ f, i, id: VIDEOS[f][i] });
+  return lista.slice(0, 6);
+}
+function proximoSorteo() {
+  const { fecha, minutos } = ahoraFlorida(), v = VIDEOS[fecha] || [];
+  if (!v[0] && minutos < HORA_M + 60) return { f: fecha, i: 0 };
+  if (!v[1] && minutos < HORA_T + 60 && (v[0] || minutos >= HORA_M + 60)) return { f: fecha, i: 1 };
+  return null;
+}
+const nombreVid = s => `${s.i === 0 ? "☀ Mediodía" : "☾ Noche"} ${textoCorto(s.f).split(" ").slice(0, 2).join(" ")}`;
+function pintarVideo() {
+  const con = sorteosConVideo(), prox = proximoSorteo();
+  const opciones = (prox ? [{ ...prox, id: null }] : []).concat(con);
+  if (!VID.manual || !VID.elegido || !opciones.some(o => o.f === VID.elegido.f && o.i === VID.elegido.i)) {
+    // Si falta más de una hora para el próximo sorteo, enseñar el último video que ya salió
+    const lejos = prox && (prox.i === 0 ? HORA_M : HORA_T) - ahoraFlorida().minutos > 60;
+    VID.elegido = (lejos && con[0]) || opciones[0] || null;
+  }
+  // Si el sorteo que se esperaba ya tiene video, pasar a él
+  if (VID.elegido && !VID.elegido.id) {
+    const ya = con.find(o => o.f === VID.elegido.f && o.i === VID.elegido.i);
+    if (ya) VID.elegido = ya;
+  }
+  const el = VID.elegido, { minutos } = ahoraFlorida();
+  const firma = JSON.stringify([opciones.map(o => o.f + o.i + (o.id || "")), el && el.f + el.i + (el.id || ""), VID.viendo, el && !el.id ? Math.floor(minutos / 1) : 0]);
+  if (firma === VID.firma) return;
+  VID.firma = firma;
+  $("videoChips").innerHTML = opciones.map(o => `<button type="button" data-k="${o.f}|${o.i}" aria-pressed="${!!el && o.f === el.f && o.i === el.i}">${o.id ? "" : "⏳ "}${nombreVid(o)}</button>`).join("");
+  if (!el) { $("videoCaja").innerHTML = `<p class="nota">No hay videos recientes.</p>`; return; }
+  if (!el.id) {
+    const hora = el.i === 0 ? HORA_M : HORA_T, falta = hora + 4 - minutos;
+    const cuando = falta > 0 ? `Sale en unos ${falta >= 60 ? Math.floor(falta / 60) + " h " + (falta % 60) + " min" : falta + " min"} (sorteo a las ${el.i === 0 ? "1:30 pm" : "9:45 pm"}).` : "Ya casi: la app lo busca cada 30 segundos.";
+    $("videoCaja").innerHTML = `<div class="video-espera"><b>${nombreVid(el)}</b><span class="nota">${cuando}</span>${falta <= 10 ? `<span class="vivo activo">● Esperando el video</span>` : ""}</div>`;
+    return;
+  }
+  const titulo = `${nombreVid(el)} · sorteo oficial`;
+  $("videoCaja").innerHTML = VID.viendo === el.id
+    ? `<div class="video-marco"><iframe src="https://www.youtube-nocookie.com/embed/${el.id}?autoplay=1&playsinline=1&rel=0" title="${titulo}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`
+    : `<button type="button" class="video-marco" id="abrirVideo" aria-label="Ver ${titulo}"><img src="https://i.ytimg.com/vi/${el.id}/hqdefault.jpg" alt="" loading="lazy"><span class="play"><i></i></span><span class="tit">${titulo}</span></button>`;
+}
+function verVideo(f, i, subir) {
+  const id = (VIDEOS[f] || [])[i];
+  VID.elegido = { f, i, id: id || null };
+  VID.manual = true;
+  VID.viendo = id || null;
+  VID.firma = "";
+  pintarVideo();
+  if (subir) $("videoHoy").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest(".ver-video, .mini-play");
+  if (b) { const [f, i] = b.dataset.k.split("|"); verVideo(f, +i, true); return; }
+  const c = e.target.closest("#videoChips button");
+  if (c) { const [f, i] = c.dataset.k.split("|"); VID.viendo = null; VID.manual = true; VID.elegido = { f, i: +i, id: (VIDEOS[f] || [])[+i] || null }; VID.firma = ""; pintarVideo(); return; }
+  if (e.target.closest("#abrirVideo") && VID.elegido) verVideo(VID.elegido.f, VID.elegido.i, false);
+});
 
 /* ---------- ANÁLISIS ---------- */
 const DIG = ["0","1","2","3","4","5","6","7","8","9"];
@@ -1341,6 +1425,7 @@ async function enVivo() {
     const json = await r.json();
     VIVO = json.sorteos || {};
     VIVO4 = json.pick4 || {};
+    VIDEOS = json.videos || VIDEOS;
     VIVO_HORA = json.hora || new Date().toISOString();
     aplicar();
   } catch (e) { /* sin conexión: queda lo último que se vio */ }

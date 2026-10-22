@@ -97,10 +97,27 @@ async function leerJuego(clave, juego, fallos) {
   return Object.fromEntries(recientes.map(f => [f, sorteos[f]]));
 }
 
+// Videos oficiales de los sorteos (lista de YouTube de la Lotería de Florida): salen ~4 min después
+const LISTA_VIDEOS = "https://www.youtube.com/feeds/videos.xml?playlist_id=PLeIaregq2XfmTwPbxbIQ5sEZ5aQbKcvXY";
+async function leerVideos(fallos) {
+  try {
+    const xml = await bajar(LISTA_VIDEOS);
+    const videos = {};
+    for (const m of xml.matchAll(/<yt:videoId>([\w-]{11})<\/yt:videoId>[\s\S]*?<title>Pick (Midday|Evening) (\d\d)-(\d\d)-(\d{4})<\/title>/g)) {
+      const fecha = `${m[5]}-${m[3]}-${m[4]}`;
+      (videos[fecha] ??= [null, null])[m[2] === "Midday" ? 0 : 1] ??= m[1];
+    }
+    return videos;
+  } catch (e) { fallos.push("Videos: " + e.message); return {}; }
+}
+
 async function leer() {
   const fallos = [];
-  const [sorteos, pick4] = await Promise.all(Object.entries(JUEGOS).map(([c, j]) => leerJuego(c, j, fallos)));
-  return { hora: new Date().toISOString(), sorteos, pick4, ...(fallos.length ? { fallos } : {}) };
+  const [[sorteos, pick4], videos] = await Promise.all([
+    Promise.all(Object.entries(JUEGOS).map(([c, j]) => leerJuego(c, j, fallos))),
+    leerVideos(fallos),
+  ]);
+  return { hora: new Date().toISOString(), sorteos, pick4, videos, ...(fallos.length ? { fallos } : {}) };
 }
 
 /* ---------- PRONÓSTICOS DE LA GENTE (base de datos D1) ---------- */
