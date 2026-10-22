@@ -223,7 +223,9 @@ async function huella(texto) {
 }
 
 export async function preguntarIA(request, env, cors, json, leerVivo, hoyFlorida) {
-  if (!env.ANTHROPIC_API_KEY) return json({ error: "La IA todavía no está activada. Vuelve pronto." }, cors, 503);
+  // Si al pegar la clave se perdió la "s" inicial (pasa con la ventana de "pulse una tecla"), se repone
+  const clave = String(env.ANTHROPIC_API_KEY || "").trim().replace(/^k-ant-/, "sk-ant-");
+  if (!clave) return json({ error: "La IA todavía no está activada. Vuelve pronto." }, cors, 503);
   if (!env.DB) return json({ error: "Sin base de datos" }, cors, 503);
   let b;
   try { b = await request.json(); } catch { return json({ error: "No entendí la pregunta." }, cors, 400); }
@@ -246,7 +248,7 @@ export async function preguntarIA(request, env, cors, json, leerVivo, hoyFlorida
   await env.DB.prepare("INSERT INTO uso_ia (quien, fecha, n) VALUES (?, ?, 1) ON CONFLICT (quien, fecha) DO UPDATE SET n = n + 1").bind(yo, hoy).run();
 
   const D = await cargarDatos(leerVivo);
-  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, maxRetries: 1, timeout: 50_000 });
+  const client = new Anthropic({ apiKey: clave, maxRetries: 1, timeout: 50_000 });
   const conversacion = [...mensajes];
   try {
     for (let vuelta = 0; vuelta < MAX_VUELTAS; vuelta++) {
@@ -279,6 +281,7 @@ export async function preguntarIA(request, env, cors, json, leerVivo, hoyFlorida
     }
     return json({ respuesta: "Esa pregunta necesita demasiadas búsquedas. Prueba a hacerla más concreta." }, cors);
   } catch (e) {
+    console.log("IA error", e?.status, e?.error?.error?.type);
     if (e instanceof Anthropic.AuthenticationError) return json({ error: "La IA no está bien configurada todavía." }, cors, 503);
     if (e instanceof Anthropic.RateLimitError) return json({ error: "Mucha gente preguntando a la vez. Prueba en un minuto." }, cors, 429);
     if (e instanceof Anthropic.APIError) return json({ error: "La IA no respondió. Prueba otra vez en un momento." }, cors, 502);
