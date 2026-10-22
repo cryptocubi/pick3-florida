@@ -303,7 +303,7 @@ td.vacio { background: var(--bg); }
 <main class="vista" id="v-hoy">
   <div class="sorteos" id="sorteosHoy"></div>
   <section class="tarjeta" id="videoHoy">
-    <div><h2>📺 Ver el sorteo</h2><p class="nota">Video oficial de la Lotería de Florida. Sale unos 4 minutos después de cada sorteo, antes que el número en las páginas de resultados.</p></div>
+    <div><h2>📺 Ver el sorteo de hoy</h2><p class="nota">Video oficial de la Lotería de Florida. Sale unos 4 minutos después de cada sorteo, antes que el número en las páginas de resultados. Cada día se borran los de ayer.</p></div>
     <div class="chips" id="videoChips" role="group" aria-label="Sorteo"></div>
     <div id="videoCaja"></div>
   </section>
@@ -1102,7 +1102,7 @@ function pintarHoy() {
 
   const filas = FECHAS.slice(-8).reverse().map(f => {
     const a = DATA[f] || [], b = DATA4[f] || [];
-    const v = VIDEOS[f] || [];
+    const v = f === hoy ? VIDEOS[f] || [] : [];
     const play = i => v[i] ? ` <button type="button" class="mini-play" data-k="${f}|${i}" aria-label="Ver el video del sorteo">▶</button>` : "";
     const lado = (n3, n4, i) => n3 ? `<span class="num">${n3.slice(1)}</span> <span class="cor">${n3[0]} · ${n4 ? n4.slice(0, 2) + " " + n4.slice(2) : "–"}</span>${play(i)}` : `<span class="cor">${f === hoy ? "pendiente" : "–"}</span>${play(i)}`;
     return `<tr><td>${textoCorto(f)}</td><td>${lado(a[0], b[0], 0)}</td><td>${lado(a[1], b[1], 1)}</td></tr>`;
@@ -1114,10 +1114,10 @@ function pintarHoy() {
 /* ---------- VIDEO DEL SORTEO ---------- */
 // La caja de video solo se vuelve a dibujar si cambia algo, para no cortar un video que se está viendo
 const VID = { elegido: null, viendo: null, firma: "", manual: false };
+// Solo los videos de hoy (hora de Florida): al cambiar el día, los de ayer desaparecen
 function sorteosConVideo() {
-  const lista = [];
-  for (const f of Object.keys(VIDEOS).sort().reverse()) for (const i of [1, 0]) if (VIDEOS[f][i]) lista.push({ f, i, id: VIDEOS[f][i] });
-  return lista.slice(0, 6);
+  const hoy = ahoraFlorida().fecha, v = VIDEOS[hoy] || [];
+  return [1, 0].filter(i => v[i]).map(i => ({ f: hoy, i, id: v[i] }));
 }
 function proximoSorteo() {
   const { fecha, minutos } = ahoraFlorida(), v = VIDEOS[fecha] || [];
@@ -1130,7 +1130,7 @@ function pintarVideo() {
   const con = sorteosConVideo(), prox = proximoSorteo();
   const opciones = (prox ? [{ ...prox, id: null }] : []).concat(con);
   if (!VID.manual || !VID.elegido || !opciones.some(o => o.f === VID.elegido.f && o.i === VID.elegido.i)) {
-    // Si falta más de una hora para el próximo sorteo, enseñar el último video que ya salió
+    // Si ya salió un video hoy y falta más de una hora para el siguiente, enseñar el que ya salió
     const lejos = prox && (prox.i === 0 ? HORA_M : HORA_T) - ahoraFlorida().minutos > 60;
     VID.elegido = (lejos && con[0]) || opciones[0] || null;
   }
@@ -1144,7 +1144,7 @@ function pintarVideo() {
   if (firma === VID.firma) return;
   VID.firma = firma;
   $("videoChips").innerHTML = opciones.map(o => `<button type="button" data-k="${o.f}|${o.i}" aria-pressed="${!!el && o.f === el.f && o.i === el.i}">${o.id ? "" : "⏳ "}${nombreVid(o)}</button>`).join("");
-  if (!el) { $("videoCaja").innerHTML = `<p class="nota">No hay videos recientes.</p>`; return; }
+  if (!el) { $("videoCaja").innerHTML = `<div class="video-espera"><b>Ya pasaron los sorteos de hoy</b><span class="nota">Mañana el video del mediodía sale sobre la 1:34 pm.</span></div>`; return; }
   if (!el.id) {
     const hora = el.i === 0 ? HORA_M : HORA_T, falta = hora + 4 - minutos;
     const cuando = falta > 0 ? `Sale en unos ${falta >= 60 ? Math.floor(falta / 60) + " h " + (falta % 60) + " min" : falta + " min"} (sorteo a las ${el.i === 0 ? "1:30 pm" : "9:45 pm"}).` : "Ya casi: la app lo busca cada 30 segundos.";
