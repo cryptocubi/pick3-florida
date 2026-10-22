@@ -233,7 +233,64 @@ async function pronosticos(request, env, cors) {
   return json({ error: "No encontrado" }, cors, 404);
 }
 
+/* ---------- AVISOS AL TELÉFONO (app de las tiendas) ---------- */
+// Cada teléfono guarda su token de Expo y si quiere aviso de mediodía (m) y/o noche (t)
+async function avisos(request, env, cors) {
+  if (!env.DB) return json({ error: "Sin base de datos" }, cors, 503);
+  let b;
+  try { b = await request.json(); } catch { return json({ error: "No entendí la petición." }, cors, 400); }
+  const token = String(b?.token || "");
+  if (!/^Expo(nent)?PushToken\[[\w-]{10,}\]$/.test(token)) return json({ error: "Token no válido." }, cors, 400);
+  const m = b.m ? 1 : 0, tt = b.t ? 1 : 0, plataforma = ["ios", "android"].includes(b.plataforma) ? b.plataforma : "?";
+  if (!m && !tt) {
+    await env.DB.prepare("DELETE FROM avisos WHERE token = ?").bind(token).run();
+    return json({ ok: true, m: false, t: false }, cors);
+  }
+  const ahora = new Date().toISOString();
+  await env.DB.prepare(`INSERT INTO avisos (token, m, t, plataforma, creado, actualizado) VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT (token) DO UPDATE SET m = excluded.m, t = excluded.t, plataforma = excluded.plataforma, actualizado = excluded.actualizado`)
+    .bind(token, m, tt, plataforma, ahora, ahora).run();
+  return json({ ok: true, m: !!m, t: !!tt }, cors);
+}
+
+// Cada minuto cerca de los sorteos: si salió un número nuevo de hoy, avisar una sola vez
+async function revisarYAvisar(env) {
+  if (!env.DB) return;
+  const datos = await leer();
+  const hoy = fechaFlorida(0).iso, r3 = datos.sorteos[hoy] || [], r4 = (datos.pick4 || {})[hoy] || [];
+  for (const [i, sorteo] of [[0, "M"], [1, "T"]]) {
+    const n3 = r3[i];
+    if (!n3) continue;
+    // Marcar como enviado ANTES de mandar, para que dos ejecuciones no avisen dos veces
+    const marca = await env.DB.prepare("INSERT OR IGNORE INTO enviados (fecha, sorteo, numero, creado) VALUES (?, ?, ?, ?)")
+      .bind(hoy, sorteo, n3, new Date().toISOString()).run();
+    if (!marca.meta?.changes) continue;
+    const n4 = r4[i];
+    const titulo = `${sorteo === "M" ? "☀ Mediodía" : "☾ Noche"} · Fijo ${n3.slice(1)}`;
+    const cuerpo = `Pick 3: ${n3} · Centena ${n3[0]}` + (n4 ? ` · Corridos ${n4.slice(0, 2)} y ${n4.slice(2)}` : " · Los corridos salen en unos minutos");
+    const { results } = await env.DB.prepare(`SELECT token FROM avisos WHERE ${sorteo === "M" ? "m" : "t"} = 1`).all();
+    for (let j = 0; j < results.length; j += 100) {
+      const lote = results.slice(j, j + 100).map(r => ({
+        to: r.token, title: titulo, body: cuerpo, sound: "default", channelId: "resultados", priority: "high",
+        data: { fecha: hoy, sorteo },
+      }));
+      try {
+        const resp = await fetch("https://exp.host/--/api/v2/push/send", {
+          method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(lote),
+        });
+        const j2 = await resp.json().catch(() => ({}));
+        // Borrar los teléfonos que ya no existen (app borrada)
+        const muertos = (j2.data || []).map((d, k) => d?.details?.error === "DeviceNotRegistered" ? lote[k].to : null).filter(Boolean);
+        for (const tk of muertos) await env.DB.prepare("DELETE FROM avisos WHERE token = ?").bind(tk).run();
+      } catch (e) { /* se reintenta solo en el próximo sorteo */ }
+    }
+  }
+}
+
 export default {
+  async scheduled(evento, env, ctx) {
+    ctx.waitUntil(revisarYAvisar(env));
+  },
   async fetch(request, env) {
     const cors = {
       "Access-Control-Allow-Origin": "*",
@@ -243,6 +300,10 @@ export default {
       "Cache-Control": "no-store",
     };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
+    if (request.method === "POST" && new URL(request.url).pathname === "/avisos") {
+      try { return await avisos(request, env, cors); }
+      catch (e) { return json({ error: "No se pudieron guardar los avisos." }, cors, 500); }
+    }
     if (new URL(request.url).pathname.startsWith("/pronosticos")) {
       try { return await pronosticos(request, env, cors); }
       catch (e) { return json({ error: "No se pudo guardar. Prueba otra vez." }, cors, 500); }

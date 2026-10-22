@@ -23,3 +23,21 @@ CREATE TABLE IF NOT EXISTS reportes (
   UNIQUE (pronostico_id, dispositivo)
 );
 CREATE INDEX IF NOT EXISTS idx_rep ON reportes (pronostico_id);
+
+-- Teléfonos que quieren aviso cuando sale el número (app de las tiendas)
+CREATE TABLE IF NOT EXISTS avisos (
+  token TEXT PRIMARY KEY,     -- token de notificaciones de Expo
+  m INTEGER NOT NULL,         -- 1 = avisar el de mediodía
+  t INTEGER NOT NULL,         -- 1 = avisar el de noche
+  plataforma TEXT NOT NULL,
+  creado TEXT NOT NULL,
+  actualizado TEXT NOT NULL
+);
+-- Sorteos ya avisados (para no avisar dos veces)
+CREATE TABLE IF NOT EXISTS enviados (
+  fecha TEXT NOT NULL,
+  sorteo TEXT NOT NULL,
+  numero TEXT NOT NULL,
+  creado TEXT NOT NULL,
+  PRIMARY KEY (fecha, sorteo)
+);

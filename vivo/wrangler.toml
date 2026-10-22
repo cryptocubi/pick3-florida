@@ -7,3 +7,7 @@ workers_dev = true
 binding = "DB"
 database_name = "pick3-pronosticos"
 database_id = "9d4ca0d4-6fbf-4b66-b23e-2ffdc90d12b7"
+
+# Cada minuto en las horas de los sorteos (hora UTC; cubre horario de verano e invierno)
+[triggers]
+crons = ["* 17-19 * * *", "* 1-3 * * *"]

@@ -270,8 +270,8 @@ td.vacio { background: var(--bg); }
 .fijos-in input { font: 800 22px var(--font-num); text-align: center; letter-spacing: 0.08em; }
 .btn-prin { border: 0; border-radius: 12px; padding: 12px; font-weight: 800; font-size: 15px; color: #fff; background: linear-gradient(135deg, var(--cielo-1), var(--cielo-2)); }
 .btn-prin:disabled { opacity: 0.6; }
-#msgGente.ok { color: #16a34a; font-weight: 700; }
-#msgGente.mal { color: var(--vivo); font-weight: 700; }
+#msgGente.ok, #msgAvisos.ok { color: #16a34a; font-weight: 700; }
+#msgGente.mal, #msgAvisos.mal { color: var(--vivo); font-weight: 700; }
 .gente-lista { display: grid; gap: 6px; }
 .persona { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
 .persona b { font-size: 14px; margin-right: auto; }
@@ -313,6 +313,14 @@ td.vacio { background: var(--bg); }
 <!-- HOY -->
 <main class="vista" id="v-hoy">
   <div class="sorteos" id="sorteosHoy"></div>
+  <section class="tarjeta" id="avisosApp" hidden>
+    <div><h2>🔔 Avisarme cuando salga</h2><p class="nota">Te llega una notificación al teléfono con el fijo, la centena y los corridos.</p></div>
+    <div class="fila">
+      <label class="check" for="avisoM"><input type="checkbox" id="avisoM"> ☀ Mediodía (1:30 pm)</label>
+      <label class="check" for="avisoT"><input type="checkbox" id="avisoT"> ☾ Noche (9:45 pm)</label>
+    </div>
+    <p class="nota" id="msgAvisos" role="status"></p>
+  </section>
   <section class="tarjeta" id="videoHoy">
     <div><h2>📺 Ver el sorteo de hoy</h2><p class="nota">Video oficial de la Lotería de Florida. Sale unos 4 minutos después de cada sorteo, antes que el número en las páginas de resultados. Cada día se borran los de ayer.</p></div>
     <div class="chips" id="videoChips" role="group" aria-label="Sorteo"></div>
@@ -1199,6 +1207,36 @@ function pintarHoy() {
   }).join("");
   $("ultimos").innerHTML = `<thead><tr><th>Día</th><th><span class="cm">☀</span> Mediodía</th><th><span class="ct">☾</span> Noche</th></tr></thead><tbody>${filas}</tbody>`;
   pintarVideo();
+}
+
+/* ---------- AVISOS (solo dentro de la app de las tiendas) ---------- */
+// La app nativa pone window.PICK3_APP y recibe los mensajes por window.ReactNativeWebView
+if (window.PICK3_APP && window.ReactNativeWebView) {
+  $("avisosApp").hidden = false;
+  try {
+    const a = JSON.parse(localStorage.getItem("pick3-avisos") || "{}");
+    $("avisoM").checked = !!a.m; $("avisoT").checked = !!a.t;
+  } catch (e) {}
+  const pedir = () => {
+    $("msgAvisos").className = "nota"; $("msgAvisos").textContent = "Guardando…";
+    window.ReactNativeWebView.postMessage(JSON.stringify({ tipo: "avisos", m: $("avisoM").checked, t: $("avisoT").checked }));
+  };
+  $("avisoM").addEventListener("change", pedir);
+  $("avisoT").addEventListener("change", pedir);
+  window.addEventListener("pick3-app", e => {
+    const d = e.detail || {};
+    if (d.tipo !== "avisos") return;
+    if (d.ok) {
+      try { localStorage.setItem("pick3-avisos", JSON.stringify({ m: d.m, t: d.t })); } catch (e2) {}
+      $("msgAvisos").className = "nota ok";
+      $("msgAvisos").textContent = d.m || d.t ? `Listo: te avisaremos ${d.m && d.t ? "en los dos sorteos" : d.m ? "en el de mediodía" : "en el de noche"}.` : "Avisos apagados.";
+    } else {
+      $("avisoM").checked = false; $("avisoT").checked = false;
+      $("msgAvisos").className = "nota mal"; $("msgAvisos").textContent = d.error || "No se pudieron activar los avisos.";
+    }
+  });
+  // Si ya estaban activados, renovar el registro al abrir la app (el token puede cambiar)
+  if ($("avisoM").checked || $("avisoT").checked) setTimeout(pedir, 1500);
 }
 
 /* ---------- VIDEO DEL SORTEO ---------- */
