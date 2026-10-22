@@ -242,6 +242,34 @@ td.vacio { background: var(--bg); }
 .extras .grupos span { font: 700 14px var(--font-num); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
 .ok { color: #16a34a; font-weight: 800; }
 .vista-in { display: grid; gap: 14px; }
+/* IA */
+.ia-boton { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 7; display: flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; padding: 12px 16px; color: #fff; font-weight: 800; font-size: 15px; background: linear-gradient(135deg, var(--cielo-1), var(--cielo-2)); box-shadow: 0 8px 24px rgba(30, 27, 75, 0.45); }
+.ia-boton svg { width: 20px; height: 20px; }
+.ia-panel { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; background: var(--bg); padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.ia-panel[hidden] { display: none !important; }
+.ia-cab { display: flex; align-items: center; gap: 10px; color: #fff; background: linear-gradient(135deg, var(--cielo-1), var(--cielo-2)); padding: 12px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); }
+.ia-cab div { display: grid; flex: 1; min-width: 0; }
+.ia-cab b { font-size: 18px; font-weight: 900; }
+.ia-cab small { font-size: 12px; opacity: 0.85; }
+.ia-cerrar { border: 0; background: rgba(255,255,255,0.15); color: #fff; width: 36px; height: 36px; border-radius: 10px; font-size: 16px; }
+.ia-cuerpo { flex: 1; overflow-y: auto; padding: 14px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); }
+.ia-permiso { max-width: 560px; margin: 0 auto; display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+.ia-permiso h3 { font-size: 18px; } .ia-permiso p { margin: 0; }
+.ia-chat { max-width: 720px; margin: 0 auto; display: grid; gap: 10px; }
+.burbuja { max-width: 86%; padding: 10px 14px; border-radius: 16px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.burbuja.yo { justify-self: end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.burbuja.ia { justify-self: start; background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.burbuja.ia b { font-weight: 800; }
+.burbuja.error { border-color: var(--vivo); color: var(--vivo); }
+.burbuja.pensando { color: var(--muted); }
+.burbuja.pensando i { display: inline-block; animation: latido 1.2s ease-in-out infinite; font-style: normal; }
+.ia-sugerencias { display: flex; gap: 8px; overflow-x: auto; padding: 6px max(16px, env(safe-area-inset-right, 0px)) 6px max(16px, env(safe-area-inset-left, 0px)); }
+.ia-sugerencias button { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 12px; font-size: 13px; font-weight: 700; color: var(--fg); }
+.ia-escribir { display: flex; gap: 8px; padding: 8px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); border-top: 1px solid var(--line); background: var(--surface); }
+.ia-escribir input { flex: 1; min-width: 0; font-size: 16px; padding: 11px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--fg); }
+.ia-escribir button { border: 0; width: 46px; border-radius: 999px; color: #fff; font-size: 18px; background: var(--accent); }
+.ia-escribir button:disabled { opacity: 0.5; }
+
 .check { display: flex !important; gap: 8px; align-items: flex-start; font-weight: 600 !important; }
 .check input { width: 18px; height: 18px; margin-top: 2px; flex: none; accent-color: var(--accent); }
 .persona details { position: relative; }
@@ -567,6 +595,32 @@ td.vacio { background: var(--bg); }
     <p class="nota">MMB Apps · Martinez Mulet Business Services LLC · Florida</p>
   </section>
 </main>
+
+<button type="button" class="ia-boton" id="iaAbrir" aria-label="Preguntarle a la IA">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+  <span>IA</span>
+</button>
+
+<div class="ia-panel" id="iaPanel" hidden role="dialog" aria-modal="true" aria-labelledby="iaTitulo">
+  <div class="ia-cab">
+    <div><b id="iaTitulo">Pregúntale a la IA</b><small>Claude, de Anthropic · conoce todo el historial</small></div>
+    <button type="button" class="ia-cerrar" id="iaCerrar" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="ia-cuerpo" id="iaCuerpo">
+    <div class="ia-permiso" id="iaPermiso">
+      <h3>Antes de empezar</h3>
+      <p>Tus preguntas se envían a <b>Claude</b>, la IA de la empresa Anthropic, para que te conteste. No guardamos lo que escribes, solo cuántas preguntas haces al día (máximo 15).</p>
+      <p>No escribas datos personales. Lo que diga la IA es entretenimiento: el sorteo es al azar.</p>
+      <button type="button" class="btn-prin" id="iaAcepto">Entendido, empezar</button>
+    </div>
+    <div class="ia-chat" id="iaChat" hidden></div>
+  </div>
+  <div class="ia-sugerencias" id="iaSugerencias" hidden></div>
+  <form class="ia-escribir" id="iaForm" hidden>
+    <input type="text" id="iaTexto" maxlength="500" placeholder="Escribe tu pregunta…" aria-label="Tu pregunta" autocomplete="off">
+    <button type="submit" id="iaEnviar" aria-label="Enviar">➤</button>
+  </form>
+</div>
 
 <nav class="tabs" aria-label="Pantallas">
   <div class="tabs-in">
@@ -1168,6 +1222,71 @@ $("subPro").addEventListener("click", e => {
   $("secMetodos").hidden = b.dataset.v !== "metodos";
   if (b.dataset.v === "gente") cargarGente();
 });
+
+
+/* ---------- IA (Claude) ---------- */
+const URL_IA = VIVO_URL.replace(/\/$/, "") + "/ia";
+const IA = { mensajes: [], ocupado: false };
+const SUGERENCIAS = [
+  "Dame un número para esta noche",
+  "¿Qué salió ayer y qué significa en la charada?",
+  "Cuando sale el 27 al mediodía, ¿qué sale en la noche?",
+  "¿Qué línea está más atrasada en la noche?",
+  "¿Cuántas veces ha salido el 44 de fijo?",
+];
+// Negritas sencillas (**texto**) y nada de HTML de fuera
+const formatoIA = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+function burbuja(clase, html) {
+  const d = document.createElement("div");
+  d.className = "burbuja " + clase;
+  d.innerHTML = html;
+  $("iaChat").appendChild(d);
+  $("iaCuerpo").scrollTop = $("iaCuerpo").scrollHeight;
+  return d;
+}
+function abrirIA() {
+  $("iaPanel").hidden = false;
+  document.body.style.overflow = "hidden";
+  let ok = false;
+  try { ok = localStorage.getItem("pick3-ia-ok") === "1"; } catch (e) {}
+  if (ok) empezarIA();
+}
+function cerrarIA() { $("iaPanel").hidden = true; document.body.style.overflow = ""; }
+function empezarIA() {
+  $("iaPermiso").hidden = true;
+  $("iaChat").hidden = false; $("iaForm").hidden = false; $("iaSugerencias").hidden = false;
+  if (!$("iaChat").childElementCount) burbuja("ia", "¡Hola! Pregúntame lo que quieras sobre los resultados, el historial desde 1988 o la charada. Por ejemplo, toca una de las ideas de abajo.");
+  $("iaSugerencias").innerHTML = SUGERENCIAS.map(s => `<button type="button">${esc(s)}</button>`).join("");
+  setTimeout(() => $("iaTexto").focus(), 50);
+}
+async function preguntar(texto) {
+  texto = texto.trim();
+  if (!texto || IA.ocupado) return;
+  IA.ocupado = true; $("iaEnviar").disabled = true;
+  burbuja("yo", esc(texto));
+  IA.mensajes.push({ role: "user", content: texto });
+  const espera = burbuja("ia pensando", "Pensando<i>…</i>");
+  try {
+    const r = await fetch(URL_IA, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dispositivo: dispositivo(), mensajes: IA.mensajes.slice(-10) }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || "La IA no respondió.");
+    espera.className = "burbuja ia"; espera.innerHTML = formatoIA(j.respuesta);
+    IA.mensajes.push({ role: "assistant", content: j.respuesta });
+  } catch (err) {
+    IA.mensajes.pop();
+    espera.className = "burbuja ia error";
+    espera.textContent = err.message === "Failed to fetch" ? "Sin conexión. Prueba otra vez." : err.message;
+  } finally {
+    IA.ocupado = false; $("iaEnviar").disabled = false;
+    $("iaCuerpo").scrollTop = $("iaCuerpo").scrollHeight;
+  }
+}
+$("iaAbrir").addEventListener("click", abrirIA);
+$("iaCerrar").addEventListener("click", cerrarIA);
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("iaPanel").hidden) cerrarIA(); });
+$("iaAcepto").addEventListener("click", () => { try { localStorage.setItem("pick3-ia-ok", "1"); } catch (e) {} empezarIA(); });
+$("iaForm").addEventListener("submit", e => { e.preventDefault(); const v = $("iaTexto").value; $("iaTexto").value = ""; preguntar(v); });
+$("iaSugerencias").addEventListener("click", e => { const b = e.target.closest("button"); if (b) preguntar(b.textContent); });
 
 /* ---------- HOY ---------- */
 function bolasFijo(n3) {

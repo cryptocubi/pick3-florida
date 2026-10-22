@@ -1,3 +1,4 @@
+import { preguntarIA } from "./ia.js";
 // Puente "en vivo" para la app Pick 3 Florida (Cloudflare Worker).
 // Lee los últimos sorteos de LotteryUSA (y Lottery.net si hace falta) en el momento
 // y se los da a la app, que desde su página no puede leer esos sitios directamente.
@@ -300,6 +301,9 @@ export default {
       "Cache-Control": "no-store",
     };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
+    if (request.method === "POST" && new URL(request.url).pathname === "/ia") {
+      return preguntarIA(request, env, cors, json, leer, () => fechaFlorida(0).iso);
+    }
     if (request.method === "POST" && new URL(request.url).pathname === "/avisos") {
       try { return await avisos(request, env, cors); }
       catch (e) { return json({ error: "No se pudieron guardar los avisos." }, cors, 500); }

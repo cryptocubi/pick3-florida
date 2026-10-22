@@ -41,3 +41,11 @@ CREATE TABLE IF NOT EXISTS enviados (
   creado TEXT NOT NULL,
   PRIMARY KEY (fecha, sorteo)
 );
+
+-- Cuántas preguntas a la IA hace cada teléfono al día (sin guardar el texto)
+CREATE TABLE IF NOT EXISTS uso_ia (
+  quien TEXT NOT NULL,   -- huella del teléfono (con sal)
+  fecha TEXT NOT NULL,
+  n INTEGER NOT NULL,
+  PRIMARY KEY (quien, fecha)
+);
