@@ -18,12 +18,13 @@ const JUEGOS = {
 };
 const MESES = { Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06", Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12" };
 const DIAS = 14;         // cuántos días recientes devuelve
-const GUARDA_MS = 20000; // no volver a preguntar a las fuentes antes de 20 s
+const GUARDA_MS = 8000; // no volver a preguntar a las fuentes antes de 8 s
 
 let guardado = null; // {cuando, cuerpo}
 
 async function bajar(url) {
-  const r = await fetch(url, { headers: {
+  // cache "no-store": que Cloudflare no nos dé una copia vieja de la página de resultados
+  const r = await fetch(url, { cache: "no-store", headers: {
     "User-Agent": NAVEGADOR,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",

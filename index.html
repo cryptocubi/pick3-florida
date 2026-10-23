@@ -789,6 +789,11 @@ function ahoraFlorida() {
     .formatToParts(new Date()).map(x => [x.type, x.value]));
   return { fecha: `${p.year}-${p.month}-${p.day}`, minutos: (+p.hour % 24) * 60 + +p.minute };
 }
+function esperandoResultado() {
+  const { fecha, minutos } = ahoraFlorida(), r3 = DATA[fecha] || [], r4 = DATA4[fecha] || [];
+  const tras = (hora, i) => minutos >= hora - 1 && minutos <= hora + 60 && !(r3[i] && r4[i]);
+  return tras(HORA_M, 0) || tras(HORA_T, 1);
+}
 function enHoraDeSorteo() {
   const m = ahoraFlorida().minutos;
   return (m >= HORA_M - 5 && m <= 14 * 60 + 45) || (m >= HORA_T - 5 && m <= 23 * 60);
@@ -1754,7 +1759,8 @@ async function enVivo() {
 // Cerca de cada sorteo mira cada 30 segundos; el resto del tiempo cada 5 minutos
 function vigilar() {
   if (document.visibilityState === "visible") enVivo();
-  setTimeout(vigilar, enHoraDeSorteo() ? 30000 : 5 * 60000);
+  // Justo después de cada sorteo (hasta que salen el fijo y los corridos) mira cada 10 s; cerca del sorteo cada 30 s; si no, cada 5 min
+  setTimeout(vigilar, esperandoResultado() ? 10000 : enHoraDeSorteo() ? 30000 : 5 * 60000);
 }
 
 function guardarPref() {
