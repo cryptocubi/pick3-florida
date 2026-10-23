@@ -242,6 +242,24 @@ td.vacio { background: var(--bg); }
 .extras .grupos span { font: 700 14px var(--font-num); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
 .ok { color: #16a34a; font-weight: 800; }
 .vista-in { display: grid; gap: 14px; }
+/* Lupa del calendario */
+.lupa { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 2px solid var(--line); border-radius: 14px; padding: 4px 6px 4px 12px; }
+.lupa:focus-within { border-color: var(--accent); }
+.lupa svg { width: 22px; height: 22px; color: var(--accent); flex: none; }
+.lupa input { flex: 1; min-width: 0; border: 0; background: transparent; font: 800 18px var(--font-num); padding: 8px 2px; color: var(--fg); outline: none; }
+.lupa input::-webkit-search-cancel-button { display: none; }
+.lupa input::placeholder { font: 500 13px var(--font-display); color: var(--muted); }
+.lupa button { border: 0; background: var(--surface-2); color: var(--muted); width: 32px; height: 32px; border-radius: 10px; font-size: 14px; }
+.hallazgos { display: grid; gap: 8px; background: var(--accent-soft); border-radius: 14px; padding: 12px 14px; }
+.hallazgos p { margin: 0; font-size: 14px; }
+.hallazgos .fechas { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.hallazgos .fechas button { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: var(--fg); white-space: nowrap; }
+.hallazgos .fechas button i { font-style: normal; font-family: var(--font-num); }
+.cal-box.buscando .n:not(.hallado):not(.espera) { opacity: 0.28; }
+.n.hallado { outline: 3px solid #f59e0b; outline-offset: -3px; border-radius: 4px; font-weight: 900; }
+.n.hallado.foco { animation: foco 1s ease-in-out 3; }
+@keyframes foco { 50% { box-shadow: 0 0 0 4px #f59e0b; } }
+@media (prefers-reduced-motion: reduce) { .n.hallado.foco { animation: none; } }
 /* IA */
 .ia-boton { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 7; display: flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; padding: 12px 16px; color: #fff; font-weight: 800; font-size: 15px; background: linear-gradient(135deg, var(--cielo-1), var(--cielo-2)); box-shadow: 0 8px 24px rgba(30, 27, 75, 0.45); }
 .ia-boton svg { width: 20px; height: 20px; }
@@ -363,6 +381,12 @@ td.vacio { background: var(--bg); }
 
 <!-- CALENDARIO -->
 <main class="vista" id="v-calendario" hidden>
+  <div class="lupa">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+    <input type="search" id="buscarCal" inputmode="numeric" maxlength="3" placeholder="Buscar: 94 (fijo), 827 (Pick 3) o 9 (línea 90–99)" aria-label="Buscar un número en el calendario" autocomplete="off">
+    <button type="button" id="limpiarCal" aria-label="Borrar búsqueda" hidden>✕</button>
+  </div>
+  <div class="hallazgos" id="hallazgos" hidden></div>
   <div class="fila">
     <label for="anio">Año <select id="anio"></select></label>
     <label for="marcar">Marcar
@@ -1578,7 +1602,7 @@ function pintarCalendario() {
       const fecha = `<span class="fecha"><b>${DIAS_C[i]}</b> ${d.getDate()}${esHoy ? " · hoy" : ""}</span>`;
       if (!r && f > hoy) return `<td class="vacio"><div class="dia">${fecha}</div></td>`;
       const celda = (k, num, hora) => {
-        if (num) return `<span class="${clasesNum(k, num, entra(k), porLinea, porFijo, marcar, grupo(k))}" title="${k === "M" ? "Mañana" : "Tarde"} ${num}"><i>${k}</i><b>${num.slice(1)}</b></span>`;
+        if (num) return `<span class="${clasesNum(k, num, entra(k), porLinea, porFijo, marcar, grupo(k))}${coincide(num) ? " hallado" : ""}" data-id="${f}|${k}" title="${k === "M" ? "Mañana" : "Tarde"} ${num}"><i>${k}</i><b>${num.slice(1)}</b></span>`;
         const pendiente = f === hoy ? (minutos < hora ? "··" : "…") : "–";
         return `<span class="n ${k.toLowerCase()} espera"><i>${k}</i><b>${pendiente}</b></span>`;
       };
@@ -1587,7 +1611,56 @@ function pintarCalendario() {
     }).join("") + "</tr>";
   });
   $("cal").innerHTML = html;
+  $("cal").closest(".cal-box").classList.toggle("buscando", !!BUSCAR.q);
+  pintarHallazgos();
 }
+
+/* ---------- LUPA: buscar un número en el calendario ---------- */
+// 2 cifras = fijo, 3 cifras = Pick 3 exacto, 1 cifra = línea (decena)
+const BUSCAR = { q: "" };
+function coincide(num) {
+  const q = BUSCAR.q;
+  if (!q) return false;
+  if (q.length === 3) return num === q;
+  if (q.length === 2) return num.slice(1) === q;
+  return num[1] === q;
+}
+function queBusco() {
+  const q = BUSCAR.q;
+  return q.length === 3 ? `el Pick 3 <b>${q}</b>` : q.length === 2 ? `el fijo <b>${q}</b> (${esc(charada(q))})` : `la línea <b>${q}0–${q}9</b>`;
+}
+function pintarHallazgos() {
+  const caja = $("hallazgos"), q = BUSCAR.q;
+  $("limpiarCal").hidden = !q;
+  if (!q) { caja.hidden = true; return; }
+  const lista = [];
+  for (const f of FECHAS) ["M", "T"].forEach((k, i) => { const n = DATA[f][i]; if (n && coincide(n)) lista.push({ f, k, n }); });
+  lista.reverse();
+  caja.hidden = false;
+  if (!lista.length) { caja.innerHTML = `<p>No encontré ${queBusco()} desde ${fechaDe(FECHAS[0]).getFullYear()}.</p>`; return; }
+  const m = lista.filter(x => x.k === "M").length, t = lista.length - m;
+  const hoyF = ahoraFlorida().fecha, ult = lista[0];
+  const anioSel = $("anio").value, fuera = anioSel === "todos" ? 0 : lista.filter(x => x.f.slice(0, 4) !== anioSel).length;
+  caja.innerHTML = `<p>Encontré ${queBusco()} <b>${lista.length} ${lista.length === 1 ? "vez" : "veces"}</b> desde ${fechaDe(FECHAS[0]).getFullYear()}: ${m} al mediodía y ${t} en la noche. La última, ${textoCorto(ult.f)} (${ult.k === "M" ? "mediodía" : "noche"}), ${haceDias(diasEntre(ult.f, hoyF))}.${fuera ? ` ${fuera} están en otros años: elige "Todos" en Año para verlas.` : ""}</p>
+    <div class="fechas">${lista.slice(0, 40).map(x => `<button type="button" data-ir="${x.f}|${x.k}"><i>${x.k === "M" ? "☀" : "☾"} ${x.n.slice(1)}</i> · ${textoCorto(x.f)}${x.f.slice(0, 4) !== hoyF.slice(0, 4) ? " " + x.f.slice(0, 4) : ""}</button>`).join("")}</div>`;
+}
+function irAlHallazgo(id) {
+  const [f] = id.split("|");
+  if ($("anio").value !== "todos" && $("anio").value !== f.slice(0, 4)) { $("anio").value = f.slice(0, 4); guardarPref(); pintarCalendario(); }
+  const el = document.querySelector(`#cal [data-id="${id}"]`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  document.querySelectorAll("#cal .foco").forEach(x => x.classList.remove("foco"));
+  el.classList.add("foco");
+}
+$("buscarCal").addEventListener("input", () => {
+  const v = $("buscarCal").value.replace(/\D/g, "").slice(0, 3);
+  $("buscarCal").value = v;
+  BUSCAR.q = v;
+  pintarCalendario();
+});
+$("limpiarCal").addEventListener("click", () => { $("buscarCal").value = ""; BUSCAR.q = ""; pintarCalendario(); $("buscarCal").focus(); });
+$("hallazgos").addEventListener("click", e => { const b = e.target.closest("[data-ir]"); if (b) irAlHallazgo(b.dataset.ir); });
 
 /* ---------- ESTADO Y PANTALLAS ---------- */
 function pintarBarra() {
