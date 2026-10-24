@@ -2048,6 +2048,17 @@ $("refrescar").addEventListener("click", async () => {
   b.classList.remove("girando");
 });
 window.addEventListener("hashchange", () => irA(location.hash.slice(1)));
+// Los botones cambian de pantalla ellos mismos (en algunas vistas previas el #enlace no funciona)
+document.addEventListener("click", e => {
+  const a = e.target.closest('a[href^="#"]');
+  const v = a && a.getAttribute("href").slice(1);
+  if (!v || !VISTAS.includes(v)) return;
+  e.preventDefault();
+  if (v === PREF.vista) return;
+  try { history.pushState(null, "", "#" + v); } catch (err) {}
+  irA(v);
+});
+window.addEventListener("popstate", () => { const v = location.hash.slice(1) || "hoy"; if (v !== PREF.vista) irA(v); });
 $("buscarFecha").value = iso(addDays(fechaDe(ahoraFlorida().fecha), -1));
 irA(location.hash.slice(1) || PREF.vista);
 
