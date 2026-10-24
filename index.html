@@ -242,6 +242,23 @@ td.vacio { background: var(--bg); }
 .extras .grupos span { font: 700 14px var(--font-num); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
 .ok { color: #16a34a; font-weight: 800; }
 .vista-in { display: grid; gap: 14px; }
+/* Asistente de líneas */
+.ultimo-lin { margin: 0; font-size: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; }
+.ultimo-lin b { font-family: var(--font-num); }
+.chips-lin { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.chip-lin { border: 1px solid var(--line); border-radius: 12px; padding: 6px 2px; text-align: center; background: var(--surface-2); color: var(--muted); display: grid; gap: 1px; }
+.chip-lin b { font: 800 20px var(--font-num); }
+.chip-lin small { font-size: 10px; }
+.chip-lin.abierta { background: var(--accent-soft); border: 2px solid var(--accent); color: var(--fg); }
+.chip-lin.abierta b { color: var(--accent); }
+.sem-lin td, .sem-lin th { text-align: center; }
+.sem-lin td:first-child, .sem-lin th:first-child { text-align: left; }
+.sem-lin .rep { background: var(--sol-soft); color: var(--fg); border-radius: 8px; font-weight: 900; box-shadow: inset 0 0 0 2px var(--sol); }
+.sem-lin .toca { color: var(--accent); font-weight: 900; }
+.sem-lin tr.hoy-lin td { background: var(--accent-soft); }
+.ultimos tr.mia td { background: var(--accent-soft); font-weight: 800; }
+.preg-lin { display: grid; gap: 8px; }
+.preg-lin button { text-align: left; border: 1px solid var(--line); background: var(--surface-2); border-radius: 12px; padding: 10px 12px; font-size: 14px; font-weight: 600; color: var(--fg); }
 /* Lupa del calendario */
 .lupa { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 2px solid var(--line); border-radius: 14px; padding: 4px 6px 4px 12px; }
 .lupa:focus-within { border-color: var(--accent); }
@@ -462,6 +479,7 @@ td.vacio { background: var(--bg); }
 <main class="vista" id="v-pronostico" hidden>
   <div class="seg" id="subPro" role="group" aria-label="Sección">
     <button type="button" data-v="metodos" aria-pressed="true">Métodos</button>
+    <button type="button" data-v="lineas" aria-pressed="false">📈 Líneas</button>
     <button type="button" data-v="gente" aria-pressed="false">👥 La gente</button>
   </div>
 
@@ -499,6 +517,44 @@ td.vacio { background: var(--bg); }
       <div><h2>Sorteos anteriores</h2><p class="nota">Quién le pegó en cada sorteo.</p></div>
       <div class="gente-lista" id="genteAntes"></div>
     </section>
+  </div>
+
+  <div id="secLineas" class="vista-in" hidden>
+    <div class="seg" id="modoL" role="group" aria-label="Sorteo">
+      <button type="button" data-v="M" aria-pressed="true">☀ Mediodía</button>
+      <button type="button" data-v="T" aria-pressed="false">☾ Noche</button>
+    </div>
+    <p class="ultimo-lin" id="linUltimo"></p>
+
+    <section class="tarjeta caliente">
+      <div><h2>🧭 Asistente de líneas</h2><p class="nota" id="linPara"></p></div>
+      <div class="chips-lin" id="linChips"></div>
+      <p class="calc" id="linDice"></p>
+      <p class="nota" id="linPrueba"></p>
+    </section>
+
+    <section class="tarjeta">
+      <div><h2>📅 La semana</h2><p class="nota" id="linSemNota"></p></div>
+      <div style="overflow-x:auto"><table class="ultimos sem-lin" id="linSemana"></table></div>
+      <p class="calc" id="linCuenta"></p>
+    </section>
+
+    <section class="tarjeta">
+      <div><h2>🔎 Tus patrones</h2><p class="nota" id="linPatNota"></p></div>
+      <div style="overflow-x:auto"><table class="ultimos" id="linPatrones"></table></div>
+      <p class="nota" id="linFijo"></p>
+    </section>
+
+    <section class="tarjeta">
+      <div><h2>¿Cuántas líneas se repiten en una semana?</h2><p class="nota" id="linDistNota"></p></div>
+      <div style="overflow-x:auto"><table class="ultimos" id="linDist"></table></div>
+    </section>
+
+    <section class="tarjeta">
+      <div><h2>✦ Pregúntale a la IA</h2><p class="nota">Toca una pregunta y la IA la contesta con los datos de verdad.</p></div>
+      <div class="preg-lin" id="linPreguntas"></div>
+    </section>
+    <p class="nota">El asistente cuenta y ordena lo que ya pasó. No sabe el próximo número: cada línea tiene siempre 1 de 10 en cada sorteo.</p>
   </div>
 
   <div id="secMetodos" class="vista-in">
@@ -1249,13 +1305,15 @@ $("subPro").addEventListener("click", e => {
   document.querySelectorAll("#subPro button").forEach(x => x.setAttribute("aria-pressed", x === b));
   $("secGente").hidden = b.dataset.v !== "gente";
   $("secMetodos").hidden = b.dataset.v !== "metodos";
+  $("secLineas").hidden = b.dataset.v !== "lineas";
   if (b.dataset.v === "gente") cargarGente();
+  if (b.dataset.v === "lineas") pintarLineas();
 });
 
 
 /* ---------- IA (Claude) ---------- */
 const URL_IA = VIVO_URL.replace(/\/$/, "") + "/ia";
-const IA = { mensajes: [], ocupado: false };
+const IA = { mensajes: [], ocupado: false, pendiente: null };
 const SUGERENCIAS = [
   "Dame un número para esta noche",
   "¿Qué salió ayer y qué significa en la charada?",
@@ -1287,6 +1345,7 @@ function empezarIA() {
   if (!$("iaChat").childElementCount) burbuja("ia", "¡Hola! Pregúntame lo que quieras sobre los resultados, el historial desde 1988 o la charada. Por ejemplo, toca una de las ideas de abajo.");
   $("iaSugerencias").innerHTML = SUGERENCIAS.map(s => `<button type="button">${esc(s)}</button>`).join("");
   setTimeout(() => $("iaTexto").focus(), 50);
+  if (IA.pendiente) { const q = IA.pendiente; IA.pendiente = null; preguntar(q); }
 }
 async function preguntar(texto) {
   texto = texto.trim();
@@ -1316,6 +1375,182 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("iaPane
 $("iaAcepto").addEventListener("click", () => { try { localStorage.setItem("pick3-ia-ok", "1"); } catch (e) {} empezarIA(); });
 $("iaForm").addEventListener("submit", e => { e.preventDefault(); const v = $("iaTexto").value; $("iaTexto").value = ""; preguntar(v); });
 $("iaSugerencias").addEventListener("click", e => { const b = e.target.closest("button"); if (b) preguntar(b.textContent); });
+
+/* ---------- ASISTENTE DE LÍNEAS ---------- */
+// La línea es la 2.ª cifra del Pick 3 (la decena del fijo). Se compara mediodía con mediodía y noche con noche, de lunes a domingo.
+const LIN = { modo: null, cache: {} };
+const lunesDe = d => d - (d + 3) % 7;  // diaNum del lunes de esa semana
+const nomLinea = l => `${l}0–${l}9`;
+const porc = (a, b) => b ? Math.round(100 * a / b) + " %" : "–";
+
+// {diaNum del lunes: [Pick 3 de lun…dom o null]} de un turno
+function semanasDe(k) {
+  const s = serie(k), clave = s.length + (s.length ? s[s.length - 1].f + s[s.length - 1].n : "");
+  if (LIN.cache[k] && LIN.cache[k].clave === clave) return LIN.cache[k].w;
+  const w = new Map();
+  for (const t of s) {
+    const d = diaNum(t.f), l = lunesDe(d);
+    if (!w.has(l)) w.set(l, new Array(7).fill(null));
+    w.get(l)[d - l] = t.n;
+  }
+  LIN.cache[k] = { clave, w };
+  return w;
+}
+// Cuáles días de la semana repitieron una línea que ya había salido antes esa semana
+function repetidos(sem, hasta = 7) {
+  const vistas = new Set(), rep = new Array(7).fill(false);
+  for (let i = 0; i < hasta; i++) {
+    if (!sem[i]) continue;
+    if (vistas.has(sem[i][1])) rep[i] = true;
+    vistas.add(sem[i][1]);
+  }
+  return rep;
+}
+// Al azar, con 7 sorteos y 10 líneas: probabilidad de 0, 1, 2… repeticiones en la semana
+function azarSemana() {
+  let dp = [1];
+  for (let s = 0; s < 7; s++) {
+    const n = new Array(dp.length + 1).fill(0);
+    dp.forEach((p, j) => { n[j] += p * j / 10; n[j + 1] += p * (10 - j) / 10; });
+    dp = n;
+  }
+  const r = new Array(8).fill(0);
+  dp.forEach((p, j) => { if (j) r[7 - j] += p; });
+  return r;
+}
+function turnoQueSigue() {
+  const r = DATA[ahoraFlorida().fecha] || [];
+  return !r[0] ? "M" : !r[1] ? "T" : "M";
+}
+const PREG_LINEAS = (k, cuando) => [
+  `¿Qué línea puede repetirse ${cuando} según lo que va de semana?`,
+  `¿Cuántas líneas se repiten por semana normalmente ${k === "M" ? "al mediodía" : "en la noche"}?`,
+  `¿Qué líneas llevan más tiempo sin salir ${k === "M" ? "al mediodía" : "en la noche"}?`,
+  `Cuando la semana ya lleva 3 líneas repetidas ${k === "M" ? "al mediodía" : "en la noche"}, ¿se repiten más?`,
+];
+
+function pintarLineas() {
+  if (!LIN.modo) LIN.modo = turnoQueSigue();
+  const k = LIN.modo, nomK = k === "M" ? "mediodía" : "noche", otro = k === "M" ? "T" : "M";
+  document.querySelectorAll("#modoL button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === k));
+  const W = semanasDe(k), W2 = semanasDe(otro);
+  if (!W.size) return;
+  const hoyF = ahoraFlorida().fecha, objetivo = sorteoObjetivo(k), dObj = diaNum(objetivo);
+  const lun = lunesDe(dObj), wd = dObj - lun, sem = W.get(lun) || new Array(7).fill(null);
+  const cuando = (k === "M" ? "al mediodía" : "en la noche") + (objetivo === hoyF ? " de hoy" : objetivo === iso(addDays(fechaDe(hoyF), 1)) ? " de mañana" : ` del ${textoCorto(objetivo)}`);
+  const desdeAnio = fechaDe(isoDeDia(Math.min(...W.keys()))).getFullYear();
+
+  // Último sorteo de cualquiera de los dos turnos: ¿repitió su línea?
+  const ultimo = ["M", "T"].map(x => { const s = serie(x); return s.length ? { k: x, ...s[s.length - 1] } : null; })
+    .filter(Boolean).sort((a, b) => a.f < b.f ? 1 : a.f > b.f ? -1 : a.k === "T" ? -1 : 1)[0];
+  if (ultimo) {
+    const du = diaNum(ultimo.f), lu = lunesDe(du), su = semanasDe(ultimo.k).get(lu), i = du - lu, l = ultimo.n[1];
+    const antes = [];
+    for (let j = 0; j < i; j++) if (su[j] && su[j][1] === l) antes.push(`${DIAS_C[j].toLowerCase()} ${su[j].slice(1)}`);
+    $("linUltimo").innerHTML = `Último sorteo: ${ultimo.k === "M" ? "☀" : "☾"} ${textoCorto(ultimo.f)} · <b>${ultimo.n.slice(1)}</b> → ` +
+      (antes.length ? `✔ <strong>repitió la línea ${nomLinea(l)}</strong> (ya salió el ${antes.join(" y el ")}).` : i === 0 ? `empieza la semana con la línea ${nomLinea(l)}.` : `línea nueva en la semana (${nomLinea(l)}).`);
+  }
+
+  // Líneas abiertas: las que ya salieron esta semana en este turno
+  const abiertas = new Map();
+  for (let j = 0; j < wd; j++) if (sem[j]) { const l = sem[j][1]; if (!abiertas.has(l)) abiertas.set(l, []); abiertas.get(l).push(`${DIAS_C[j]} ${sem[j].slice(1)}`); }
+  $("linPara").textContent = `Para el sorteo ${cuando} (${DIAS[wd].toLowerCase()}). Marcadas: las líneas que ya salieron de lunes a ${wd ? DIAS[wd - 1].toLowerCase() : "hoy"} ${k === "M" ? "al mediodía" : "en la noche"}.`;
+  $("linChips").innerHTML = Array.from({ length: 10 }, (_, l) => {
+    const a = abiertas.get(String(l));
+    return `<div class="chip-lin${a ? " abierta" : ""}" title="${a ? "Salió: " + a.join(", ") : "No ha salido esta semana"}"><b>${l}</b><small>${nomLinea(l)}</small><small>${a ? a.map(x => x.split(" ")[0]).join(" ") : "—"}</small></div>`;
+  }).join("");
+  const n = abiertas.size;
+
+  // Prueba con toda la historia: cuando a esta altura de la semana había n líneas abiertas, ¿cuántas veces se repitió?
+  let casos = 0, si = 0;
+  for (const [l0, s0] of W) {
+    if (l0 >= lun || !s0[wd]) continue;
+    const vistas = new Set();
+    for (let j = 0; j < wd; j++) if (s0[j]) vistas.add(s0[j][1]);
+    if (vistas.size !== n) continue;
+    casos++; if (vistas.has(s0[wd][1])) si++;
+  }
+  if (!n) {
+    $("linDice").innerHTML = `Empieza la semana: todavía no hay ninguna línea que se pueda repetir ${cuando}.`;
+    $("linPrueba").textContent = "";
+  } else {
+    $("linDice").innerHTML = `Si sale una de estas <b>${n}</b> ${n === 1 ? "línea" : "líneas"} (${[...abiertas.keys()].sort().map(nomLinea).join(", ")}), se repite. Probabilidad real: <b>${n} de 10</b> (${n * 10} %).`;
+    $("linPrueba").textContent = casos ? `Lo comprobé con la historia desde ${desdeAnio}: de ${casos.toLocaleString("es")} veces que un ${DIAS[wd].toLowerCase()} ${k === "M" ? "al mediodía" : "en la noche"} tenía ${n} ${n === 1 ? "línea abierta" : "líneas abiertas"}, se repitió en ${porc(si, casos)}. El azar da ${n * 10} %.` : "";
+  }
+
+  // La semana completa, con los dos turnos
+  const semV = wd === 0 && !sem.some(Boolean) ? lun - 7 : lun;
+  const sM = (k === "M" ? W : W2).get(semV) || new Array(7).fill(null), sT = (k === "T" ? W : W2).get(semV) || new Array(7).fill(null);
+  const rM = repetidos(sM), rT = repetidos(sT);
+  $("linSemNota").textContent = `${semV === lun ? "Esta semana" : "La semana pasada"}: lunes ${textoCorto(isoDeDia(semV)).split(" ").slice(1).join(" ")} a domingo ${textoCorto(isoDeDia(semV + 6)).split(" ").slice(1).join(" ")}. En amarillo, los fijos que repitieron una línea de esa semana (mediodía con mediodía, noche con noche).`;
+  const celda = (s, r, j, x) => {
+    if (s[j]) return `<td class="num${r[j] ? " rep" : ""}" title="Línea ${nomLinea(s[j][1])}">${s[j].slice(1)}</td>`;
+    if (semV === lun && j === wd && x === k) return `<td class="toca">?</td>`;
+    return `<td class="cor">·</td>`;
+  };
+  $("linSemana").innerHTML = `<thead><tr><th>Día</th><th>☀ Mediodía</th><th>☾ Noche</th></tr></thead><tbody>` +
+    DIAS.map((d, j) => `<tr${semV === lun && j === wd ? ' class="hoy-lin"' : ""}><td>${nombreDia(j)}</td>${celda(sM, rM, j, "M")}${celda(sT, rT, j, "T")}</tr>`).join("") + `</tbody>`;
+  const cuenta = r => r.filter(Boolean).length;
+  const reps = W => { const out = []; for (const [l0, s0] of W) if (l0 < lun && s0.every(Boolean)) out.push(cuenta(repetidos(s0))); return out; };
+  const hM = reps(k === "M" ? W : W2), hT = reps(k === "T" ? W : W2), prom = a => (a.reduce((x, y) => x + y, 0) / a.length).toFixed(2).replace(".", ",");
+  $("linCuenta").innerHTML = `Mediodía: <b>${cuenta(rM)}</b> ${cuenta(rM) === 1 ? "repetición" : "repeticiones"} · Noche: <b>${cuenta(rT)}</b>. En una semana completa lo normal es <b>${prom(hM)}</b> al mediodía y <b>${prom(hT)}</b> en la noche; el azar da 1,78.`;
+
+  // Tus patrones: el día del sorteo comparado con cada día anterior de la semana
+  if (!wd) {
+    $("linPatNota").textContent = `El lunes no tiene días antes en la semana. Los patrones salen desde el martes.`;
+    $("linPatrones").innerHTML = "";
+  } else {
+    $("linPatNota").textContent = `¿Cuántas veces el ${DIAS[wd].toLowerCase()} ${k === "M" ? "al mediodía" : "en la noche"} repitió la línea de cada día anterior? Historia desde ${desdeAnio} y las últimas 13 semanas. El azar da 10 % con cada día.`;
+    const filas = [];
+    for (let e = 0; e < wd; e++) {
+      let t = 0, h = 0, t13 = 0, h13 = 0;
+      for (const [l0, s0] of W) {
+        if (l0 >= lun || !s0[wd] || !s0[e]) continue;
+        const ok = s0[wd][1] === s0[e][1];
+        t++; if (ok) h++;
+        if (l0 >= lun - 13 * 7) { t13++; if (ok) h13++; }
+      }
+      filas.push(`<tr><td><b>Con el ${DIAS[e].toLowerCase()}</b><br><span class="desc">${sem[e] ? `Salió ${sem[e].slice(1)} → si repite, línea ${nomLinea(sem[e][1])}` : "No hubo sorteo"}</span></td><td class="num">${porc(h, t)}</td><td class="cor">${h13} de ${t13}</td></tr>`);
+    }
+    // Todos juntos: con cualquiera de los días anteriores
+    let t = 0, h = 0, t13 = 0, h13 = 0, esp = 0;
+    for (const [l0, s0] of W) {
+      if (l0 >= lun || !s0[wd]) continue;
+      const vistas = new Set(); for (let j = 0; j < wd; j++) if (s0[j]) vistas.add(s0[j][1]);
+      const ok = vistas.has(s0[wd][1]);
+      t++; if (ok) h++; esp += vistas.size / 10;
+      if (l0 >= lun - 13 * 7) { t13++; if (ok) h13++; }
+    }
+    filas.push(`<tr class="mia"><td>Con cualquier día anterior<br><span class="desc">El azar da ${porc(esp, t)} de media</span></td><td class="num">${porc(h, t)}</td><td class="cor">${h13} de ${t13}</td></tr>`);
+    $("linPatrones").innerHTML = `<thead><tr><th>El ${DIAS[wd].toLowerCase()}…</th><th>Desde ${desdeAnio}</th><th>Últ. 13 sem.</th></tr></thead><tbody>${filas.join("")}</tbody>`;
+  }
+  // El fijo exacto repetido en la semana
+  const fijos = [...new Set(sem.slice(0, wd).filter(Boolean).map(x => x.slice(1)))];
+  let semF = 0, conF = 0;
+  for (const [l0, s0] of W) {
+    if (l0 >= lun || !s0.every(Boolean)) continue;
+    semF++; if (new Set(s0.map(x => x.slice(1))).size < 7) conF++;
+  }
+  $("linFijo").innerHTML = (fijos.length ? `Para que se repita el <b>fijo exacto</b> ${cuando} tiene que salir ${fijos.join(", ")}: ${fijos.length} de 100. ` : "") +
+    `Semanas con algún fijo repetido ${k === "M" ? "al mediodía" : "en la noche"}: ${porc(conF, semF)} (el azar da 19 %).`;
+
+  // Cuántas repeticiones tiene una semana completa
+  const hist = k === "M" ? hM : hT, az = azarSemana(), ahora = cuenta(k === "M" ? rM : rT);
+  const grupos = [0, 1, 2, 3, 4];
+  const veces = grupos.map(g => hist.filter(x => g === 4 ? x >= 4 : x === g).length);
+  const azar = grupos.map(g => g === 4 ? az.slice(4).reduce((a, b) => a + b, 0) : az[g]);
+  $("linDistNota").textContent = `${hist.length.toLocaleString("es")} semanas completas ${k === "M" ? "al mediodía" : "en la noche"} desde ${desdeAnio}. ${semV === lun ? `Esta semana ${ahora === 1 ? "ya va 1" : "ya van " + ahora} y ${(f => f === 1 ? "falta 1 sorteo" : `faltan ${f} sorteos`)(sem.filter((x, j) => !x && j >= wd).length)}.` : ""}`;
+  $("linDist").innerHTML = `<thead><tr><th>Líneas repetidas</th><th>Semanas</th><th>Real</th><th>Azar</th></tr></thead><tbody>` +
+    grupos.map((g, i) => `<tr${semV === lun && (g === 4 ? ahora >= 4 : ahora === g) ? ' class="mia"' : ""}><td><b>${g === 4 ? "4 o más" : g}</b></td><td class="cor">${veces[i].toLocaleString("es")}</td><td class="num">${porc(veces[i], hist.length)}</td><td class="cor">${Math.round(azar[i] * 100)} %</td></tr>`).join("") + `</tbody>`;
+
+  $("linPreguntas").innerHTML = PREG_LINEAS(k, cuando).map(q => `<button type="button">${esc(q)}</button>`).join("");
+}
+$("modoL").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; LIN.modo = b.dataset.v; pintarLineas(); });
+$("linPreguntas").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  IA.pendiente = b.textContent;
+  abrirIA();
+});
 
 /* ---------- HOY ---------- */
 function bolasFijo(n3) {
@@ -1686,7 +1921,7 @@ function pintarVista() {
   if (PREF.vista === "calendario") pintarCalendario();
   if (PREF.vista === "analisis") pintarAnalisis();
   if (PREF.vista === "charada") { pintarCharada(); pintarCompas(); pintarTablaCompas(); }
-  if (PREF.vista === "pronostico") { pintarPronostico(); if (!$("secGente").hidden) pintarGente(); }
+  if (PREF.vista === "pronostico") { pintarPronostico(); if (!$("secGente").hidden) pintarGente(); if (!$("secLineas").hidden) pintarLineas(); }
 }
 function irA(v) {
   if (!VISTAS.includes(v)) v = "hoy";
