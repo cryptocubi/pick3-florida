@@ -1,5 +1,5 @@
 // Guarda la app para abrirla sin internet. Los números (datos.json) se piden siempre a la red primero.
-const CACHE = "pick3-v15";
+const CACHE = "pick3-v16";
 const APP = ["./", "index.html", "manifest.webmanifest", "icono-192.png", "icono-512.png", "icono-180.png", "historico.json"];
 
 self.addEventListener("install", e => {
@@ -15,9 +15,9 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
-  // Red primero para todo lo nuestro; si no hay conexión, lo guardado
+  // Red primero para todo lo nuestro (preguntando siempre si hay versión nueva); si no hay conexión, lo guardado
   e.respondWith(
-    fetch(e.request).then(r => {
+    fetch(e.request, { cache: "no-cache" }).then(r => {
       if (r.ok) {
         const copia = r.clone();
         const clave = url.pathname.endsWith("datos.json") ? new Request(url.origin + url.pathname) : e.request;
