@@ -571,6 +571,7 @@ td.vacio { background: var(--bg); }
     <section class="tarjeta caliente">
       <div><h2>🧠 Análisis del día</h2><p class="nota" id="diaPara"></p></div>
       <h3>Las líneas que más señalan</h3>
+      <p class="nota">Cuenta los análisis de líneas (repetición de la semana, el mismo día pasado, el cruce) y también las líneas de los números de suma y resta y bola caliente.</p>
       <div class="dia-lineas" id="diaLineas"></div>
       <h3>Los números que más señalan</h3>
       <div class="dia-nums" id="diaNums"></div>
@@ -1783,13 +1784,14 @@ function analisisDia(k, f) {
 
   const lineas = lin.map((tags, l) => ({ l, tags })).filter(x => x.tags.length).sort((a, b) => b.tags.length - a.tags.length || a.l - b.l).slice(0, 4);
   // Líneas señaladas por análisis de líneas (no por los mismos números)
-  const fuertes = new Set(lin.map((tags, l) => tags.some(g => g.startsWith("Repetiría") || g.startsWith("Como el") || g === "Cruce de líneas") ? l : -1).filter(l => l >= 0));
+  const motivos = lin.map(tags => tags.map(g => g === "Repetiría la semana" ? "repetiría la semana" : g.startsWith("Como el") ? g.replace("Como el ", "como el ").replace(/ \(.*\)/, "") : g === "Cruce de líneas" ? "cruce de líneas" : null).filter(Boolean));
+  const fuertes = new Set(motivos.map((x, l) => x.length ? l : -1).filter(l => l >= 0));
   const nums = new Map();
   const poner = (n, tag) => { if (!nums.has(n)) nums.set(n, []); if (!nums.get(n).includes(tag)) nums.get(n).push(tag); };
   if (dia) for (const n of dia.nums) poner(n, `Día y noche del ${DIAS_C[diaSemana(f7)].toLowerCase()} pasado`);
   for (const x of top) poner(x.n, x.veces > 1 ? `Suma y resta (${x.veces} cuentas)` : "Suma y resta");
   for (const n of caliente) poner(n, "Bola caliente");
-  const lista = [...nums].map(([n, tags]) => ({ n, tags, linea: fuertes.has(+n[0]) }))
+  const lista = [...nums].map(([n, tags]) => ({ n, tags, linea: fuertes.has(+n[0]), motivo: motivos[+n[0]] }))
     .sort((a, b) => (b.tags.length + b.linea) - (a.tags.length + a.linea) || b.tags.length - a.tags.length || +b.linea - +a.linea).slice(0, 6);
   return { lin, lineas, lista, dia, top, caliente, cruce, sem, wd, lun, f7 };
 }
@@ -1836,7 +1838,7 @@ function pintarDelDia() {
   $("diaPara").textContent = `Para el sorteo de ${k === "M" ? "mediodía" : "noche"} del ${textoFecha(objetivo).toLowerCase()}. Junté lo que dicen todos los análisis de la app y te muestro lo que más se repite entre ellos.`;
   $("diaLineas").innerHTML = lineas.length ? lineas.map(x => `<div class="dia-l"><span class="bola">${nomLinea(x.l)}</span><div><b class="fuerza">${x.tags.length} ${x.tags.length === 1 ? "señal" : "señales"}</b><div class="tags">${x.tags.map(g => `<span class="tag">${g}</span>`).join("")}</div></div></div>`).join("")
     : `<p class="nota">Hoy ningún análisis señala una línea en especial.</p>`;
-  $("diaNums").innerHTML = lista.map(x => `<div class="dia-n"><span class="bola mini">${x.n}</span><div><b>${charada(x.n)}</b><div class="tags">${x.tags.map(g => `<span class="tag">${g}</span>`).join("")}${x.linea ? `<span class="tag sol">Línea señalada</span>` : ""}</div></div></div>`).join("");
+  $("diaNums").innerHTML = lista.map(x => `<div class="dia-n"><span class="bola mini">${x.n}</span><div><b>${charada(x.n)}</b><div class="tags">${x.tags.map(g => `<span class="tag">${g}</span>`).join("")}${x.linea ? `<span class="tag sol">Línea ${nomLinea(+x.n[0])}: ${x.motivo.join(" y ")}</span>` : ""}</div></div></div>`).join("");
 
   // La semana
   const cuenta = sx => repetidos(sx).filter(Boolean).length;
