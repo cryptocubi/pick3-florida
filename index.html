@@ -251,6 +251,14 @@ td.vacio { background: var(--bg); }
 .tag.sol { background: var(--sol-soft); color: var(--fg); }
 .dia-l b.fuerza, .dia-n b.fuerza { font-size: 12px; color: var(--muted); }
 .dia-n { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px 12px; }
+.cumplidos { display: grid; gap: 8px; }
+.cumple { display: grid; gap: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+.cumple.si { border-color: #16a34a; }
+.cumple-cab { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 14px; }
+.cumple-cab small { color: var(--muted); font-weight: 600; font-size: 12px; }
+.tag.ok { background: #dcfce7; color: #166534; }
+.tag.no { background: var(--surface); color: var(--muted); }
+@media (prefers-color-scheme: dark) { .tag.ok { background: #14361f; color: #86efac; } }
 .dia-semana { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
 /* Cruce de líneas */
 .cruce-dibujo svg { width: 100%; max-width: 420px; height: auto; display: block; margin: 0 auto; }
@@ -569,6 +577,11 @@ td.vacio { background: var(--bg); }
       <h3>Cómo va la semana</h3>
       <ul class="dia-semana" id="diaSemana"></ul>
       <p class="nota" id="diaHonesto"></p>
+    </section>
+    <section class="tarjeta">
+      <div><h2>✅ Lo que se cumplió</h2><p class="nota">Después de cada sorteo la app revisa lo que decía el análisis antes de que saliera y marca con ✔ lo que acertó.</p></div>
+      <div class="cumplidos" id="diaCumplidos"></div>
+      <p class="calc" id="diaCumplidosNota"></p>
     </section>
   </div>
 
@@ -1744,44 +1757,33 @@ function pintarLineas() {
 }
 
 /* ---------- ANÁLISIS DEL DÍA ---------- */
-// Junta todos los análisis para el próximo sorteo: qué líneas y qué números señalan más métodos a la vez
-const DIA = { modo: null };
-function pintarDelDia() {
-  if (!DIA.modo) DIA.modo = turnoQueSigue();
-  const k = DIA.modo;
-  document.querySelectorAll("#modoD button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === k));
-  const s = serie(k);
-  if (!s.length) return;
-  const m = mapaFijos(), objetivo = sorteoObjetivo(k), d = diaNum(objetivo), lun = lunesDe(d), wd = d - lun;
-  const nomK = k === "M" ? "mediodía" : "noche", f7 = isoDeDia(d - 7);
-  $("diaPara").textContent = `Para el sorteo de ${nomK} del ${textoFecha(objetivo).toLowerCase()}. Junté lo que dicen todos los análisis de la app y te muestro lo que más se repite entre ellos.`;
-
-  // Señales para cada línea (0–9)
+// Junta todos los análisis para un sorteo: qué líneas y qué números señalan más métodos a la vez.
+// Solo usa lo que salió antes de ese sorteo, así se puede repetir para sorteos pasados y ver qué se cumplió.
+const DIA = { modo: null, cumplidos: null };
+function analisisDia(k, f) {
+  const s = serie(k), m = mapaFijos(), d = diaNum(f), lun = lunesDe(d), wd = d - lun, f7 = isoDeDia(d - 7);
   const lin = Array.from({ length: 10 }, () => []);
   const sem = semanasDe(k).get(lun) || new Array(7).fill(null);
   for (let j = 0; j < wd; j++) if (sem[j] && !lin[+sem[j][1]].includes("Repetiría la semana")) lin[+sem[j][1]].push("Repetiría la semana");
   const pasado = m.get(f7 + k);
   if (pasado) lin[+pasado[0]].push(`Como el ${DIAS[diaSemana(f7)].toLowerCase()} pasado (${pasado})`);
+  let cruce = null;
   if (k === "T") {
-    const a = m.get(objetivo + "M"), b = m.get(f7 + "T");
-    if (a && b) for (const l of lineasCruce(a, b)) lin[l].push("Cruce de líneas");
+    const a = m.get(f + "M"), b = m.get(f7 + "T");
+    if (a && b) { cruce = lineasCruce(a, b); for (const l of cruce) lin[l].push("Cruce de líneas"); }
   }
-  const { dia, top } = sumaResta(m, objetivo, k);
-  const deSuma = new Set([...(dia ? dia.nums : []), ...top.map(x => x.n)].map(n => +n[0]));
-  for (const l of deSuma) lin[l].push("Suma y resta");
-  // Bola caliente de los métodos clásicos
+  const { dia, top } = sumaResta(m, f, k);
+  for (const l of new Set([...(dia ? dia.nums : []), ...top.map(x => x.n)].map(n => +n[0]))) lin[l].push("Suma y resta");
+  // Bola caliente de los métodos clásicos, con los sorteos de antes
   const e = estadoNuevo();
-  for (const t of s) sumar(e, t);
-  const caliente = metodos(e, d, previoCompleto(k, s[s.length - 1]), objetivo).res["Bola caliente"];
+  let previo = null;
+  for (const t of s) { if (t.f >= f) break; sumar(e, t); previo = t; }
+  const caliente = e.primero === null ? [] : metodos(e, d, previoCompleto(k, previo), f).res["Bola caliente"];
   for (const n of caliente) if (!lin[+n[0]].includes("Bola caliente")) lin[+n[0]].push("Bola caliente");
 
   const lineas = lin.map((tags, l) => ({ l, tags })).filter(x => x.tags.length).sort((a, b) => b.tags.length - a.tags.length || a.l - b.l).slice(0, 4);
   // Líneas señaladas por análisis de líneas (no por los mismos números)
   const fuertes = new Set(lin.map((tags, l) => tags.some(g => g.startsWith("Repetiría") || g.startsWith("Como el") || g === "Cruce de líneas") ? l : -1).filter(l => l >= 0));
-  $("diaLineas").innerHTML = lineas.length ? lineas.map(x => `<div class="dia-l"><span class="bola">${nomLinea(x.l)}</span><div><b class="fuerza">${x.tags.length} ${x.tags.length === 1 ? "señal" : "señales"}</b><div class="tags">${x.tags.map(g => `<span class="tag">${g}</span>`).join("")}</div></div></div>`).join("")
-    : `<p class="nota">Hoy ningún análisis señala una línea en especial.</p>`;
-
-  // Números: en cuántos análisis aparece cada uno
   const nums = new Map();
   const poner = (n, tag) => { if (!nums.has(n)) nums.set(n, []); if (!nums.get(n).includes(tag)) nums.get(n).push(tag); };
   if (dia) for (const n of dia.nums) poner(n, `Día y noche del ${DIAS_C[diaSemana(f7)].toLowerCase()} pasado`);
@@ -1789,6 +1791,51 @@ function pintarDelDia() {
   for (const n of caliente) poner(n, "Bola caliente");
   const lista = [...nums].map(([n, tags]) => ({ n, tags, linea: fuertes.has(+n[0]) }))
     .sort((a, b) => (b.tags.length + b.linea) - (a.tags.length + a.linea) || b.tags.length - a.tags.length || +b.linea - +a.linea).slice(0, 6);
+  return { lin, lineas, lista, dia, top, caliente, cruce, sem, wd, lun, f7 };
+}
+// Qué se cumplió en un sorteo que ya salió
+function cumplido(k, f) {
+  const i = k === "M" ? 0 : 1, p3 = (DATA[f] || [])[i] || mapaFijos().get(f + k), p4 = (DATA4[f] || [])[i];
+  if (!p3) return null;
+  const fijo = p3.slice(-2), l = +fijo[0], corridos = p4 ? [p4.slice(0, 2), p4.slice(2, 4)] : [];
+  const a = analisisDia(k, f), si = [];
+  if (a.lineas.length && a.lineas[0].l === l) si.push(`Línea más señalada ${nomLinea(l)}`);
+  else if (a.lineas.some(x => x.l === l)) si.push(`Línea señalada ${nomLinea(l)}`);
+  // Solo los análisis de líneas (los de números tocan casi todas las líneas y siempre saldrían ✔)
+  for (const g of a.lin[l]) if (g === "Repetiría la semana") si.push("Repitió la línea de la semana"); else if (g.startsWith("Como el")) si.push("Línea como el día pasado"); else if (g === "Cruce de líneas") si.push("Cruce de líneas");
+  const top6 = new Set(a.lista.map(x => x.n));
+  if (top6.has(fijo)) si.push(`Número ${fijo} de fijo`);
+  for (const c of corridos) if (top6.has(c)) si.push(`Número ${c} de corrido`);
+  if (a.dia && a.dia.nums.includes(fijo)) si.push("Día y noche del día pasado");
+  if (a.top.some(x => x.n === fijo)) si.push("Suma y resta (10 números)");
+  if (a.caliente.includes(fijo)) si.push("Bola caliente");
+  return { k, f, fijo, corridos, si: [...new Set(si)], lineaTop: a.lineas.length && a.lineas[0].l === l, numTop: top6.has(fijo) };
+}
+function pintarCumplidos() {
+  const clave = mapaFijos().size + "|" + JSON.stringify(DATA4[FECHAS[FECHAS.length - 1]] || "");
+  if (!DIA.cumplidos || DIA.cumplidos.clave !== clave) {
+    const ult = [];
+    for (const k of ["M", "T"]) for (const t of serie(k).slice(-8)) ult.push({ k, f: t.f });
+    ult.sort((a, b) => a.f < b.f ? 1 : a.f > b.f ? -1 : a.k === "T" ? -1 : 1);
+    DIA.cumplidos = { clave, lista: ult.slice(0, 14).map(x => cumplido(x.k, x.f)).filter(Boolean) };
+  }
+  const L = DIA.cumplidos.lista;
+  $("diaCumplidos").innerHTML = L.slice(0, 6).map(c => `<div class="cumple${c.si.length ? " si" : ""}">
+    <div class="cumple-cab"><span>${c.k === "M" ? "☀" : "☾"} ${textoCorto(c.f)}</span><span class="bola mini">${c.fijo}</span>${c.corridos.length ? `<small>corridos ${c.corridos.join(" · ")}</small>` : ""}</div>
+    <div class="tags">${c.si.length ? c.si.map(g => `<span class="tag ok">✔ ${g}</span>`).join("") : `<span class="tag no">No se cumplió nada</span>`}</div></div>`).join("");
+  const lt = L.filter(c => c.lineaTop).length, nt = L.filter(c => c.numTop).length;
+  $("diaCumplidosNota").textContent = L.length ? `En los últimos ${L.length} sorteos, la línea más señalada acertó ${lt} ${lt === 1 ? "vez" : "veces"} (por suerte, 1 de cada 10) y uno de los 6 números salió de fijo ${nt} ${nt === 1 ? "vez" : "veces"} (por suerte, 6 de cada 100).` : "";
+}
+function pintarDelDia() {
+  if (!DIA.modo) DIA.modo = turnoQueSigue();
+  const k = DIA.modo;
+  document.querySelectorAll("#modoD button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === k));
+  if (!serie(k).length) return;
+  const m = mapaFijos(), objetivo = sorteoObjetivo(k), d = diaNum(objetivo);
+  const { lineas, lista, dia, sem, wd, lun, f7 } = analisisDia(k, objetivo);
+  $("diaPara").textContent = `Para el sorteo de ${k === "M" ? "mediodía" : "noche"} del ${textoFecha(objetivo).toLowerCase()}. Junté lo que dicen todos los análisis de la app y te muestro lo que más se repite entre ellos.`;
+  $("diaLineas").innerHTML = lineas.length ? lineas.map(x => `<div class="dia-l"><span class="bola">${nomLinea(x.l)}</span><div><b class="fuerza">${x.tags.length} ${x.tags.length === 1 ? "señal" : "señales"}</b><div class="tags">${x.tags.map(g => `<span class="tag">${g}</span>`).join("")}</div></div></div>`).join("")
+    : `<p class="nota">Hoy ningún análisis señala una línea en especial.</p>`;
   $("diaNums").innerHTML = lista.map(x => `<div class="dia-n"><span class="bola mini">${x.n}</span><div><b>${charada(x.n)}</b><div class="tags">${x.tags.map(g => `<span class="tag">${g}</span>`).join("")}${x.linea ? `<span class="tag sol">Línea señalada</span>` : ""}</div></div></div>`).join("");
 
   // La semana
@@ -1799,14 +1846,16 @@ function pintarDelDia() {
     const fx = isoDeDia(x), ax = m.get(fx + "M"), bx = m.get(isoDeDia(x - 7) + "T"), tx = m.get(fx + "T");
     if (ax && bx && tx) { n++; if (lineasCruce(ax, bx).includes(+tx[0])) si++; }
   }
+  const abiertas = [...new Set(sem.slice(0, wd).filter(Boolean).map(x => x[1]))].length;
   const puntos = [
     wd ? `Líneas repetidas: <b>${cuenta(sM)}</b> al mediodía y <b>${cuenta(sT)}</b> en la noche. Lo normal en una semana entera es 1,8.` : "Empieza la semana: todavía no hay líneas repetidas.",
-    wd ? `${[...new Set(sem.slice(0, wd).filter(Boolean).map(x => x[1]))].length} líneas ya salieron ${k === "M" ? "al mediodía" : "en la noche"}: si sale una de ellas, se repite (${[...new Set(sem.slice(0, wd).filter(Boolean).map(x => x[1]))].length} de 10).` : "",
+    wd ? `${abiertas} líneas ya salieron ${k === "M" ? "al mediodía" : "en la noche"}: si sale una de ellas, se repite (${abiertas} de 10).` : "",
     n ? `Cruce de líneas esta semana: <b>${si} de ${n}</b> noches.` : "",
     dia ? `Día y noche del ${DIAS[diaSemana(f7)].toLowerCase()} pasado: ${dia.a} y ${dia.b} → ${dia.nums.join(", ")}.` : "",
   ].filter(Boolean);
   $("diaSemana").innerHTML = puntos.map(p => `<li>${p}</li>`).join("");
   $("diaHonesto").textContent = "Cuantos más análisis señalan algo, más se repite en las cuentas, pero el sorteo no lo sabe: cada línea sigue teniendo 1 de 10 y cada fijo 1 de 100. Úsalo para escoger, no como seguridad.";
+  pintarCumplidos();
 }
 $("modoD").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; DIA.modo = b.dataset.v; pintarDelDia(); });
 
