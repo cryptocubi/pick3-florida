@@ -577,8 +577,15 @@ td.vacio { background: var(--bg); }
 
   <section class="tarjeta">
     <div><h2>➕➖ Suma y resta</h2><p class="nota" id="srNota"></p></div>
+    <h3 id="srDiaTitulo"></h3>
+    <p class="nota" id="srDiaNota"></p>
+    <div class="sr-nums" id="srDia"></div>
+    <p class="calc" id="srDiaPrueba"></p>
+    <p class="nota" id="srDiaUltimos"></p>
+    <h3>🔀 Toda la semana, día y noche mezclados</h3>
+    <p class="nota">Cada día de la semana con todo: día con día, noche con noche, día con noche, y esta semana con la pasada. Estos son los 10 números que más salen en todas esas cuentas.</p>
     <div class="sr-nums" id="srNums"></div>
-    <div style="overflow-x:auto"><table class="ultimos" id="srTabla"></table></div>
+    <details><summary class="nota" id="srVer"></summary><div style="overflow-x:auto"><table class="ultimos" id="srTabla"></table></div></details>
     <p class="calc" id="srPrueba"></p>
     <p class="nota" id="srUltimos"></p>
   </section>
@@ -1061,7 +1068,7 @@ function pintarMito() {
 }
 
 /* ---------- SUMA Y RESTA ---------- */
-// Día con día: cada sorteo de esta semana (arriba en el calendario) con el mismo sorteo de la semana pasada (abajo)
+// Se mezclan día y noche: el mismo día de la semana pasada (☀ con ☾) y, en cada día de la semana, todo con todo
 const SR = {};
 const dos = v => String(v).padStart(2, "0");
 const diaSemana = f => (fechaDe(f).getDay() + 6) % 7;
@@ -1085,58 +1092,92 @@ function cuentas(a, b) {
     [dos(Math.abs(+a[0] - +b[0]) * 10 + Math.abs(+a[1] - +b[1])), `c/c ${a}−${b}`],
   ];
 }
-// Para el sorteo (f, k): todas las parejas de la semana y los 10 números que más salen en las cuentas
+// Para el sorteo (f, k): la combinación día + noche del mismo día pasado, y todas las parejas de la semana
 function sumaResta(m, f, k) {
   const d = diaNum(f), f7 = isoDeDia(d - 7);
-  const pares = [{ a: m.get(f7 + "M"), b: m.get(f7 + "T"), etiqueta: `${DIAS_C[diaSemana(f7)]} pasado ☀ con ☾` }];
-  // Los sorteos de esta semana antes del (f, k); si es lunes al mediodía, la semana pasada entera
-  let lun = lunesDe(d), arriba = [];
-  for (let x = d; x >= lun; x--) for (const kk of ["T", "M"]) if (x < d || (k === "T" && kk === "M")) arriba.push({ x, kk });
-  if (!arriba.some(p => m.has(isoDeDia(p.x) + p.kk))) { lun -= 7; arriba = []; for (let x = lun + 6; x >= lun; x--) for (const kk of ["T", "M"]) arriba.push({ x, kk }); }
-  for (const { x, kk } of arriba) pares.push({ a: m.get(isoDeDia(x) + kk), b: m.get(isoDeDia(x - 7) + kk), etiqueta: `${DIAS_C[diaSemana(isoDeDia(x))]} ${kk === "M" ? "☀" : "☾"}` });
+  const dM = m.get(f7 + "M"), dT = m.get(f7 + "T");
+  const dia = dM && dT ? { a: dM, b: dT, nums: [...new Set(cuentas(dM, dT).map(r => r[0]))] } : null;
+  // Los días de esta semana hasta el sorteo; si es lunes al mediodía, la semana pasada entera
+  let lun = lunesDe(d), hasta = d;
+  const esta = (x, kk) => x < d || (x === d && k === "T" && kk === "M");
+  if (![...Array(d - lun + 1).keys()].some(i => ["M", "T"].some(kk => esta(lun + i, kk) && m.has(isoDeDia(lun + i) + kk)))) { lun -= 7; hasta = lun + 6; }
   const veces = new Map(), filas = [];
-  for (const { a, b, etiqueta } of pares) {
-    if (!a || !b) continue;
-    const res = cuentas(a, b);
-    filas.push({ etiqueta, a, b, res: res.map(r => r[0]) });
-    for (const [n, receta] of res) {
-      if (!veces.has(n)) veces.set(n, { n, veces: 0, orden: veces.size, recetas: [] });
-      const v = veces.get(n); v.veces++; v.recetas.push(receta);
+  for (let x = hasta; x >= lun; x--) {
+    const fx = isoDeDia(x), fp = isoDeDia(x - 7), nd = DIAS_C[diaSemana(fx)];
+    const n = [
+      ["☀", esta(x, "M") || hasta < d ? m.get(fx + "M") : null],
+      ["☾", esta(x, "T") || hasta < d ? m.get(fx + "T") : null],
+      ["☀ pasado", m.get(fp + "M")],
+      ["☾ pasado", m.get(fp + "T")],
+    ];
+    for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) {
+      const a = n[i][1], b = n[j][1];
+      if (!a || !b) continue;
+      const res = cuentas(a, b);
+      filas.push({ etiqueta: `${nd} ${n[i][0]} con ${n[j][0]}`, a, b, res: res.map(r => r[0]) });
+      for (const [v, receta] of res) {
+        if (!veces.has(v)) veces.set(v, { n: v, veces: 0, orden: veces.size, recetas: [] });
+        const e = veces.get(v); e.veces++; e.recetas.push(receta);
+      }
     }
   }
   const top = [...veces.values()].sort((x, y) => y.veces - x.veces || x.orden - y.orden).slice(0, 10);
-  return { top, filas };
+  return { dia, top, filas };
 }
-// Prueba con la historia: ¿cuántas veces el fijo estuvo entre los 10 números de suma y resta?
+// Prueba con la historia: la combinación del día pasado y los 10 que más salen
 function pruebaSumaResta(k) {
   const s = serie(k), m = mapaFijos(), clave = k + s.length + (s.length ? s[s.length - 1].n : "");
   if (SR[k] && SR[k].clave === clave) return SR[k];
   const desde = iso(addDays(fechaDe(ahoraFlorida().fecha), -365));
-  const r = { clave, todo: { si: 0, n: 0 }, anio: { si: 0, n: 0 }, ultimos: [] };
+  const nuevo = () => ({ todo: { si: 0, n: 0, nums: 0 }, anio: { si: 0, n: 0, nums: 0 }, ultimos: [], desde: null });
+  const r = { clave, dia: nuevo(), top: nuevo() };
   for (const t of s) {
-    const { top } = sumaResta(m, t.f, k);
-    if (top.length < 10) continue;
-    const fijo = t.n.slice(1), hit = top.find(x => x.n === fijo);
-    for (const x of t.f >= desde ? [r.todo, r.anio] : [r.todo]) { x.n++; if (hit) x.si++; }
-    if (hit) r.ultimos.push({ f: t.f, fijo, receta: hit.recetas[0] });
+    const { dia, top } = sumaResta(m, t.f, k), fijo = t.n.slice(1), cuando = t.f >= desde ? ["todo", "anio"] : ["todo"];
+    if (dia) {
+      const ok = dia.nums.includes(fijo);
+      r.dia.desde ??= t.f;
+      for (const c of cuando) { const x = r.dia[c]; x.n++; x.nums += dia.nums.length; if (ok) x.si++; }
+      if (ok) r.dia.ultimos.push({ f: t.f, fijo, receta: cuentas(dia.a, dia.b).find(c => c[0] === fijo)[1] });
+    }
+    if (top.length === 10) {
+      const hit = top.find(x => x.n === fijo);
+      r.top.desde ??= t.f;
+      for (const c of cuando) { const x = r.top[c]; x.n++; x.nums += 10; if (hit) x.si++; }
+      if (hit) r.top.ultimos.push({ f: t.f, fijo, receta: hit.recetas[0] });
+    }
   }
-  r.ultimos = r.ultimos.slice(-5).reverse();
+  for (const x of [r.dia, r.top]) x.ultimos = x.ultimos.slice(-5).reverse();
   SR[k] = r;
   return r;
 }
 function pintarSumaResta(k, objetivo) {
-  const m = mapaFijos(), { top, filas } = sumaResta(m, objetivo, k);
-  $("srNota").textContent = `Para ${k === "M" ? "el mediodía" : "la noche"} del ${textoFecha(objetivo).toLowerCase()}. Día con día: cada número de esta semana (arriba en el calendario) con el del mismo día de la semana pasada (abajo), lunes con lunes, martes con martes…, y el mediodía con la noche del mismo día de la semana pasada. Se suman y se restan, completos y cifra a cifra, y salen los 10 números que más se repiten en todas las cuentas.`;
-  if (!top.length) { $("srNums").innerHTML = ""; $("srTabla").innerHTML = ""; $("srPrueba").textContent = "Todavía no hay sorteos suficientes."; $("srUltimos").textContent = ""; return; }
+  const m = mapaFijos(), { dia, top, filas } = sumaResta(m, objetivo, k), pr = pruebaSumaResta(k);
+  const nomDia = DIAS[diaSemana(objetivo)].toLowerCase(), esteAnio = ahoraFlorida().fecha.slice(0, 4);
+  const bola = (n, pie) => `<div><span class="bola mini">${n}</span><span class="nom">${charada(n)}</span><small>${pie}</small></div>`;
+  const prueba = (x, cuantos) => [["Último año", x.anio], [`Desde ${x.desde ? fechaDe(x.desde).getFullYear() : ""}`, x.todo]].filter(([, y]) => y.n)
+    .map(([c, y]) => `${c}: dio <b>${y.si} de ${y.n.toLocaleString("es")}</b> sorteos (${pct(100 * y.si / y.n)}). Con ${cuantos || Math.round(y.nums / y.n)} números al azar: ${pct(y.nums / y.n)}.`).join("<br>");
+  const ultimas = x => x.ultimos.length ? `Últimas veces que dio: ` + x.ultimos.map(u => `<b>${u.fijo}</b> el ${textoCorto(u.f)}${u.f.slice(0, 4) !== esteAnio ? " " + u.f.slice(0, 4) : ""} (${u.receta})`).join(" · ") + "." : "";
+
+  $("srNota").textContent = `Para ${k === "M" ? "el mediodía" : "la noche"} del ${textoFecha(objetivo).toLowerCase()}.`;
+  // 1. Día + noche del mismo día de la semana pasada
+  $("srDiaTitulo").textContent = `🎯 Día y noche del ${nomDia} pasado`;
+  if (dia) {
+    $("srDiaNota").innerHTML = `El ${nomDia} pasado salió <b>${dia.a}</b> al mediodía y <b>${dia.b}</b> en la noche. Sumando y restando los dos salen estos números:`;
+    $("srDia").innerHTML = cuentas(dia.a, dia.b).filter((c, i, t) => t.findIndex(o => o[0] === c[0]) === i).map(([n, receta]) => bola(n, receta)).join("");
+    $("srDiaPrueba").innerHTML = prueba(pr.dia);
+    $("srDiaUltimos").innerHTML = ultimas(pr.dia);
+  } else {
+    $("srDiaNota").textContent = `No hay los dos sorteos del ${nomDia} pasado.`;
+    $("srDia").innerHTML = ""; $("srDiaPrueba").textContent = ""; $("srDiaUltimos").textContent = "";
+  }
+  // 2. Toda la semana, todo con todo
   const enTop = new Set(top.map(x => x.n));
-  $("srNums").innerHTML = top.map(x => `<div><span class="bola mini">${x.n}</span><span class="nom">${charada(x.n)}</span><small>${x.veces === 1 ? x.recetas[0] : `sale en ${x.veces} cuentas`}</small></div>`).join("");
-  $("srTabla").innerHTML = `<thead><tr><th>Pareja</th><th>Uno</th><th>Otro</th><th>Suma</th><th>Resta</th><th>C/c +</th><th>Al revés</th><th>C/c −</th></tr></thead><tbody>` +
-    filas.map(x => `<tr><td>${x.etiqueta}</td><td class="num">${x.a}</td><td class="cor">${x.b}</td>${x.res.map(v => `<td class="num"><span class="${enTop.has(v) ? "sr-top" : ""}">${v}</span></td>`).join("")}</tr>`).join("") + `</tbody>`;
-  const pr = pruebaSumaResta(k), linea = (x, cuando) => x.n
-    ? `${cuando}: el fijo salió entre estos 10 números <b>${x.si} de ${x.n.toLocaleString("es")}</b> sorteos (${pct(100 * x.si / x.n)}). Con 10 números al azar acertarías el 10 %.`
-    : "";
-  $("srPrueba").innerHTML = [linea(pr.anio, "Último año"), linea(pr.todo, `Desde ${fechaDe(serie(k)[0].f).getFullYear()}`)].filter(Boolean).join("<br>");
-  $("srUltimos").innerHTML = pr.ultimos.length ? `Últimas veces que dio: ` + pr.ultimos.map(u => `<b>${u.fijo}</b> el ${textoCorto(u.f)}${u.f.slice(0, 4) !== ahoraFlorida().fecha.slice(0, 4) ? " " + u.f.slice(0, 4) : ""} (${u.receta})`).join(" · ") + "." : "";
+  $("srNums").innerHTML = top.map(x => bola(x.n, x.veces === 1 ? x.recetas[0] : `sale en ${x.veces} cuentas`)).join("");
+  $("srVer").textContent = `Ver las ${filas.length} combinaciones`;
+  $("srTabla").innerHTML = `<thead><tr><th>Combinación</th><th>Uno</th><th>Otro</th><th>Suma</th><th>Resta</th><th>C/c +</th><th>Al revés</th><th>C/c −</th></tr></thead><tbody>` +
+    filas.map(x => `<tr><td>${x.etiqueta}</td><td class="num">${x.a}</td><td class="num">${x.b}</td>${x.res.map(v => `<td class="num"><span class="${enTop.has(v) ? "sr-top" : ""}">${v}</span></td>`).join("")}</tr>`).join("") + `</tbody>`;
+  $("srPrueba").innerHTML = prueba(pr.top, 10);
+  $("srUltimos").innerHTML = ultimas(pr.top);
 }
 
 function estrellas(x) {
