@@ -242,6 +242,11 @@ td.vacio { background: var(--bg); }
 .extras .grupos span { font: 700 14px var(--font-num); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
 .ok { color: #16a34a; font-weight: 800; }
 .vista-in { display: grid; gap: 14px; }
+/* Suma y resta */
+.sr-nums { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 10px 6px; }
+.sr-nums > div { display: grid; justify-items: center; gap: 2px; text-align: center; min-width: 0; }
+.sr-nums small { font-size: 10px; color: var(--muted); font-family: var(--font-num); }
+.sr-nums span.nom { font-size: 11px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 /* Asistente de líneas */
 .ultimo-lin { margin: 0; font-size: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; }
 .ultimo-lin b { font-family: var(--font-num); }
@@ -567,6 +572,14 @@ td.vacio { background: var(--bg); }
   <section class="tarjeta caliente">
     <div><h2>🔥 Bola caliente</h2><p class="nota">Los números que eligen a la vez más métodos de abajo.</p></div>
     <div class="calientes" id="bolaCaliente"></div>
+  </section>
+
+  <section class="tarjeta">
+    <div><h2>➕➖ Suma y resta</h2><p class="nota" id="srNota"></p></div>
+    <div class="sr-nums" id="srNums"></div>
+    <div style="overflow-x:auto"><table class="ultimos" id="srTabla"></table></div>
+    <p class="calc" id="srPrueba"></p>
+    <p class="nota" id="srUltimos"></p>
   </section>
 
   <section class="tarjeta">
@@ -1046,6 +1059,88 @@ function pintarMito() {
     }).join("") + `</tbody>`;
 }
 
+/* ---------- SUMA Y RESTA ---------- */
+// Cada sorteo de esta semana (arriba en el calendario) con el mismo sorteo de la semana pasada (abajo)
+const SR = {};
+const dos = v => String(v).padStart(2, "0");
+const diaSemana = f => (fechaDe(f).getDay() + 6) % 7;
+function mapaFijos() {
+  const a = serie("M"), b = serie("T"), clave = a.length + "|" + b.length + "|" + (a.length ? a[a.length - 1].n : "") + (b.length ? b[b.length - 1].n : "");
+  if (SR.mapa && SR.mapa.clave === clave) return SR.mapa.m;
+  const m = new Map();
+  for (const t of a) m.set(t.f + "M", t.n.slice(1));
+  for (const t of b) m.set(t.f + "T", t.n.slice(1));
+  SR.mapa = { clave, m };
+  return m;
+}
+// Los sorteos de antes del (f, k), del más nuevo al más viejo
+function sorteosAntes(f, k, cuantos) {
+  const out = [];
+  let d = diaNum(f), kk = k;
+  for (let i = 0; i < cuantos; i++) {
+    if (kk === "T") kk = "M"; else { kk = "T"; d--; }
+    out.push({ f: isoDeDia(d), k: kk });
+  }
+  return out;
+}
+// Al menos 10 números: suma, resta, suma cifra a cifra y resta cifra a cifra de los últimos sorteos con su pareja de la semana pasada
+function sumaResta(m, f, k) {
+  const nums = new Map(), filas = [], f7 = isoDeDia(diaNum(f) - 7);
+  // Primero el mismo día de la semana pasada, mediodía con noche (abajo, los dos); luego cada sorteo de arriba con el de abajo
+  const pares = [{ a: m.get(f7 + "M"), b: m.get(f7 + "T"), etiqueta: `${DIAS_C[diaSemana(f7)]} pasado ☀ con ☾` }];
+  for (const p of sorteosAntes(f, k, 8)) pares.push({ a: m.get(p.f + p.k), b: m.get(isoDeDia(diaNum(p.f) - 7) + p.k), etiqueta: `${DIAS_C[diaSemana(p.f)]} ${p.k === "M" ? "☀" : "☾"}` });
+  for (const { a, b, etiqueta } of pares) {
+    if (!a || !b) continue;
+    const su0 = (+a[0] + +b[0]) % 10, su1 = (+a[1] + +b[1]) % 10;
+    const ops = [
+      [(+a + +b) % 100, `${a}+${b}`],
+      [Math.abs(+a - +b), `${a}−${b}`],
+      [su0 * 10 + su1, `cifra a cifra ${a}+${b}`],
+      [su1 * 10 + su0, `cifra a cifra ${a}+${b} al revés`],
+      [Math.abs(+a[0] - +b[0]) * 10 + Math.abs(+a[1] - +b[1]), `cifra a cifra ${a}−${b}`],
+    ];
+    const fila = { etiqueta, a, b, res: [] };
+    for (const [v, receta] of ops) {
+      const x = dos(v);
+      fila.res.push(x);
+      if (!nums.has(x)) nums.set(x, receta);
+    }
+    filas.push(fila);
+    if (filas.length >= 3 && nums.size >= 10) break;
+  }
+  return { nums, filas };
+}
+// Prueba con la historia: ¿cuántas veces el fijo estuvo entre los números de suma y resta?
+function pruebaSumaResta(k) {
+  const s = serie(k), m = mapaFijos(), clave = k + s.length + (s.length ? s[s.length - 1].n : "");
+  if (SR[k] && SR[k].clave === clave) return SR[k];
+  const desde = iso(addDays(fechaDe(ahoraFlorida().fecha), -365));
+  const r = { clave, todo: { si: 0, n: 0, nums: 0 }, anio: { si: 0, n: 0, nums: 0 }, ultimos: [] };
+  for (const t of s) {
+    const { nums } = sumaResta(m, t.f, k);
+    if (nums.size < 10) continue;
+    const fijo = t.n.slice(1), ok = nums.has(fijo);
+    for (const x of t.f >= desde ? [r.todo, r.anio] : [r.todo]) { x.n++; x.nums += nums.size; if (ok) x.si++; }
+    if (ok) r.ultimos.push({ f: t.f, fijo, receta: nums.get(fijo) });
+  }
+  r.ultimos = r.ultimos.slice(-5).reverse();
+  SR[k] = r;
+  return r;
+}
+function pintarSumaResta(k, objetivo) {
+  const m = mapaFijos(), { nums, filas } = sumaResta(m, objetivo, k);
+  $("srNota").textContent = `Para ${k === "M" ? "el mediodía" : "la noche"} del ${textoFecha(objetivo).toLowerCase()}. Se suman y se restan, completos y cifra a cifra: el mediodía con la noche del mismo día de la semana pasada, y cada número de esta semana (arriba en el calendario) con el del mismo día de la semana pasada (abajo).`;
+  if (!nums.size) { $("srNums").innerHTML = ""; $("srTabla").innerHTML = ""; $("srPrueba").textContent = "Todavía no hay sorteos suficientes."; $("srUltimos").textContent = ""; return; }
+  $("srNums").innerHTML = [...nums].map(([n, receta]) => `<div><span class="bola mini">${n}</span><span class="nom">${charada(n)}</span><small>${receta.replace("cifra a cifra ", "c/c ")}</small></div>`).join("");
+  $("srTabla").innerHTML = `<thead><tr><th>Pareja</th><th>Uno</th><th>Otro</th><th>Suma</th><th>Resta</th><th>C/c +</th><th>Al revés</th><th>C/c −</th></tr></thead><tbody>` +
+    filas.map(x => `<tr><td>${x.etiqueta}</td><td class="num">${x.a}</td><td class="cor">${x.b}</td>${x.res.map(v => `<td class="num">${v}</td>`).join("")}</tr>`).join("") + `</tbody>`;
+  const pr = pruebaSumaResta(k), linea = (x, cuando) => x.n
+    ? `${cuando}: el fijo salió entre los números de suma y resta <b>${x.si} de ${x.n.toLocaleString("es")}</b> sorteos (${pct(100 * x.si / x.n)}). Jugando la misma cantidad de números al azar (${Math.round(x.nums / x.n)}), acertarías el ${pct(x.nums / x.n)}.`
+    : "";
+  $("srPrueba").innerHTML = [linea(pr.anio, "Último año"), linea(pr.todo, `Desde ${fechaDe(serie(k)[0].f).getFullYear()}`)].filter(Boolean).join("<br>");
+  $("srUltimos").innerHTML = pr.ultimos.length ? `Últimas veces que dio: ` + pr.ultimos.map(u => `<b>${u.fijo}</b> el ${textoCorto(u.f)}${u.f.slice(0, 4) !== ahoraFlorida().fecha.slice(0, 4) ? " " + u.f.slice(0, 4) : ""} (${u.receta.replace("cifra a cifra ", "c/c ")})`).join(" · ") + "." : "";
+}
+
 function estrellas(x) {
   let h = "";
   for (let i = 1; i <= 5; i++) h += `<span class="${x >= i ? "f" : x >= i - 0.5 ? "h" : ""}">★</span>`;
@@ -1067,6 +1162,7 @@ function pintarPronostico() {
   $("bolaCaliente").innerHTML = res["Bola caliente"].map(n => `<div><span class="bola oro">${n}</span><b>${charada(n)}</b>
     <span class="votos"><b>${votos[n].length} de ${Object.keys(res).length - 1}</b> métodos:<br>${votos[n].join(", ")}</span></div>`).join("");
 
+  pintarSumaResta(k, objetivo);
   pintarProbabilidades();
   pintarMito();
 
