@@ -246,7 +246,15 @@ td.vacio { background: var(--bg); }
 .sr-nums { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 10px 6px; }
 .sr-nums > div { display: grid; justify-items: center; gap: 2px; text-align: center; min-width: 0; }
 .sr-nums small { font-size: 10px; color: var(--muted); font-family: var(--font-num); }
-.sr-top { color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 4px; }
+.sr-lista { display: grid; gap: 12px; margin-top: 10px; }
+.sr-dia h4 { margin: 0 0 2px; font-size: 14px; font-weight: 800; }
+.sr-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.sr-par { font-size: 14px; white-space: nowrap; }
+.sr-par b { font-family: var(--font-num); font-size: 16px; }
+.sr-par small { color: var(--muted); font-size: 11px; }
+.sr-da { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; color: var(--muted); }
+.sr-chip { font: 800 14px var(--font-num); color: var(--fg); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 2px 7px; }
+.sr-chip.top { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .sr-nums span.nom { font-size: 11px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 /* Asistente de líneas */
 .ultimo-lin { margin: 0; font-size: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; }
@@ -585,7 +593,7 @@ td.vacio { background: var(--bg); }
     <h3>🔀 Toda la semana, día y noche mezclados</h3>
     <p class="nota">Cada día de la semana con todo: día con día, noche con noche, día con noche, y esta semana con la pasada. Estos son los 10 números que más salen en todas esas cuentas.</p>
     <div class="sr-nums" id="srNums"></div>
-    <details><summary class="nota" id="srVer"></summary><div style="overflow-x:auto"><table class="ultimos" id="srTabla"></table></div></details>
+    <details><summary class="nota" id="srVer"></summary><div class="sr-lista" id="srTabla"></div></details>
     <p class="calc" id="srPrueba"></p>
     <p class="nota" id="srUltimos"></p>
   </section>
@@ -1103,7 +1111,7 @@ function sumaResta(m, f, k) {
   if (![...Array(d - lun + 1).keys()].some(i => ["M", "T"].some(kk => esta(lun + i, kk) && m.has(isoDeDia(lun + i) + kk)))) { lun -= 7; hasta = lun + 6; }
   const veces = new Map(), filas = [];
   for (let x = hasta; x >= lun; x--) {
-    const fx = isoDeDia(x), fp = isoDeDia(x - 7), nd = DIAS_C[diaSemana(fx)];
+    const fx = isoDeDia(x), fp = isoDeDia(x - 7);
     const n = [
       ["☀", esta(x, "M") || hasta < d ? m.get(fx + "M") : null],
       ["☾", esta(x, "T") || hasta < d ? m.get(fx + "T") : null],
@@ -1114,7 +1122,7 @@ function sumaResta(m, f, k) {
       const a = n[i][1], b = n[j][1];
       if (!a || !b) continue;
       const res = cuentas(a, b);
-      filas.push({ etiqueta: `${nd} ${n[i][0]} con ${n[j][0]}`, a, b, res: res.map(r => r[0]) });
+      filas.push({ dia: DIAS[diaSemana(fx)], ra: n[i][0], rb: n[j][0], a, b, res: res.map(r => r[0]) });
       for (const [v, receta] of res) {
         if (!veces.has(v)) veces.set(v, { n: v, veces: 0, orden: veces.size, recetas: [] });
         const e = veces.get(v); e.veces++; e.recetas.push(receta);
@@ -1173,9 +1181,12 @@ function pintarSumaResta(k, objetivo) {
   // 2. Toda la semana, todo con todo
   const enTop = new Set(top.map(x => x.n));
   $("srNums").innerHTML = top.map(x => bola(x.n, x.veces === 1 ? x.recetas[0] : `sale en ${x.veces} cuentas`)).join("");
-  $("srVer").textContent = `Ver las ${filas.length} combinaciones`;
-  $("srTabla").innerHTML = `<thead><tr><th>Combinación</th><th>Uno</th><th>Otro</th><th>Suma</th><th>Resta</th><th>C/c +</th><th>Al revés</th><th>C/c −</th></tr></thead><tbody>` +
-    filas.map(x => `<tr><td>${x.etiqueta}</td><td class="num">${x.a}</td><td class="num">${x.b}</td>${x.res.map(v => `<td class="num"><span class="${enTop.has(v) ? "sr-top" : ""}">${v}</span></td>`).join("")}</tr>`).join("") + `</tbody>`;
+  $("srVer").textContent = `Ver las ${filas.length} cuentas, día por día`;
+  const lado = (rol, n) => `${rol[0]} <b>${n}</b>${rol.endsWith("pasado") ? " <small>pasado</small>" : ""}`;
+  const dias = [...new Set(filas.map(x => x.dia))];
+  $("srTabla").innerHTML = `<p class="nota">Cada línea: los dos números que se juntaron → lo que dieron al sumarlos y restarlos. En color, los que están entre los 10 de arriba.</p>` +
+    dias.map(dn => `<div class="sr-dia"><h4>${dn}</h4>` + filas.filter(x => x.dia === dn).map(x =>
+      `<div class="sr-fila"><span class="sr-par">${lado(x.ra, x.a)} <small>con</small> ${lado(x.rb, x.b)}</span><span class="sr-da">→ ${[...new Set(x.res)].map(v => `<span class="sr-chip${enTop.has(v) ? " top" : ""}">${v}</span>`).join("")}</span></div>`).join("") + `</div>`).join("");
   $("srPrueba").innerHTML = prueba(pr.top, 10);
   $("srUltimos").innerHTML = ultimas(pr.top);
 }
