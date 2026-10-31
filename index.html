@@ -242,6 +242,27 @@ td.vacio { background: var(--bg); }
 .extras .grupos span { font: 700 14px var(--font-num); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
 .ok { color: #16a34a; font-weight: 800; }
 .vista-in { display: grid; gap: 14px; }
+/* Análisis del día */
+.dia-lineas, .dia-nums { display: grid; gap: 8px; }
+.dia-l { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 6px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+.dia-l .bola { width: 54px; height: 54px; font-size: 18px; }
+.dia-l .tags, .dia-n .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag { font-size: 11px; font-weight: 700; background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 2px 8px; }
+.tag.sol { background: var(--sol-soft); color: var(--fg); }
+.dia-l b.fuerza, .dia-n b.fuerza { font-size: 12px; color: var(--muted); }
+.dia-n { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px 12px; }
+.dia-semana { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+/* Cruce de líneas */
+.cruce-dibujo svg { width: 100%; max-width: 420px; height: auto; display: block; margin: 0 auto; }
+.cruce-semana { display: grid; gap: 6px; }
+.cruce-dia { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; font-size: 13px; }
+.cruce-dia > b:first-child { width: 34px; }
+.cruce-dia .cn { font: 800 16px var(--font-num); }
+.cruce-dia .cn u { text-decoration: none; color: var(--vivo); border-bottom: 2px solid var(--vivo); }
+.cruce-dia .x { color: var(--vivo); font-weight: 900; }
+.cruce-dia .ok { color: #16a34a; font-weight: 900; }
+.cruce-dia .no { color: var(--muted); font-weight: 900; }
+.chip-l { font: 800 13px var(--font-num); background: var(--accent-soft); color: var(--accent); border-radius: 8px; padding: 2px 7px; }
 /* Suma y resta */
 .sr-nums { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 10px 6px; }
 .sr-nums > div { display: grid; justify-items: center; gap: 2px; text-align: center; min-width: 0; }
@@ -493,8 +514,9 @@ td.vacio { background: var(--bg); }
 <main class="vista" id="v-pronostico" hidden>
   <div class="seg" id="subPro" role="group" aria-label="Sección">
     <button type="button" data-v="metodos" aria-pressed="true">Métodos</button>
+    <button type="button" data-v="dia" aria-pressed="false">🧠 Del día</button>
     <button type="button" data-v="lineas" aria-pressed="false">📈 Líneas</button>
-    <button type="button" data-v="gente" aria-pressed="false">👥 La gente</button>
+    <button type="button" data-v="gente" aria-pressed="false">👥 Gente</button>
   </div>
 
   <div id="secGente" class="vista-in" hidden>
@@ -533,6 +555,23 @@ td.vacio { background: var(--bg); }
     </section>
   </div>
 
+  <div id="secDia" class="vista-in" hidden>
+    <div class="seg" id="modoD" role="group" aria-label="Sorteo">
+      <button type="button" data-v="M" aria-pressed="true">☀ Mediodía</button>
+      <button type="button" data-v="T" aria-pressed="false">☾ Noche</button>
+    </div>
+    <section class="tarjeta caliente">
+      <div><h2>🧠 Análisis del día</h2><p class="nota" id="diaPara"></p></div>
+      <h3>Las líneas que más señalan</h3>
+      <div class="dia-lineas" id="diaLineas"></div>
+      <h3>Los números que más señalan</h3>
+      <div class="dia-nums" id="diaNums"></div>
+      <h3>Cómo va la semana</h3>
+      <ul class="dia-semana" id="diaSemana"></ul>
+      <p class="nota" id="diaHonesto"></p>
+    </section>
+  </div>
+
   <div id="secLineas" class="vista-in" hidden>
     <div class="seg" id="modoL" role="group" aria-label="Sorteo">
       <button type="button" data-v="M" aria-pressed="true">☀ Mediodía</button>
@@ -545,6 +584,15 @@ td.vacio { background: var(--bg); }
       <div class="chips-lin" id="linChips"></div>
       <p class="calc" id="linDice"></p>
       <p class="nota" id="linPrueba"></p>
+    </section>
+
+    <section class="tarjeta">
+      <div><h2>✖️ Cruce de líneas</h2><p class="nota">La línea del mediodía de hoy cruzada con la línea de la noche del mismo día de la semana pasada. Sumando o restando las dos cifras salen 2 líneas para la noche.</p></div>
+      <div class="cruce-dibujo" id="cruceDibujo"></div>
+      <p class="calc" id="cruceDice"></p>
+      <h3 id="cruceSemTitulo">Esta semana</h3>
+      <div class="cruce-semana" id="cruceSemana"></div>
+      <p class="nota" id="crucePrueba"></p>
     </section>
 
     <section class="tarjeta">
@@ -1452,6 +1500,8 @@ $("subPro").addEventListener("click", e => {
   $("secGente").hidden = b.dataset.v !== "gente";
   $("secMetodos").hidden = b.dataset.v !== "metodos";
   $("secLineas").hidden = b.dataset.v !== "lineas";
+  $("secDia").hidden = b.dataset.v !== "dia";
+  if (b.dataset.v === "dia") pintarDelDia();
   if (b.dataset.v === "gente") cargarGente();
   if (b.dataset.v === "lineas") pintarLineas();
 });
@@ -1690,6 +1740,144 @@ function pintarLineas() {
     grupos.map((g, i) => `<tr${semV === lun && (g === 4 ? ahora >= 4 : ahora === g) ? ' class="mia"' : ""}><td><b>${g === 4 ? "4 o más" : g}</b></td><td class="cor">${veces[i].toLocaleString("es")}</td><td class="num">${porc(veces[i], hist.length)}</td><td class="cor">${Math.round(azar[i] * 100)} %</td></tr>`).join("") + `</tbody>`;
 
   $("linPreguntas").innerHTML = PREG_LINEAS(k, cuando).map(q => `<button type="button">${esc(q)}</button>`).join("");
+  pintarCruce();
+}
+
+/* ---------- ANÁLISIS DEL DÍA ---------- */
+// Junta todos los análisis para el próximo sorteo: qué líneas y qué números señalan más métodos a la vez
+const DIA = { modo: null };
+function pintarDelDia() {
+  if (!DIA.modo) DIA.modo = turnoQueSigue();
+  const k = DIA.modo;
+  document.querySelectorAll("#modoD button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === k));
+  const s = serie(k);
+  if (!s.length) return;
+  const m = mapaFijos(), objetivo = sorteoObjetivo(k), d = diaNum(objetivo), lun = lunesDe(d), wd = d - lun;
+  const nomK = k === "M" ? "mediodía" : "noche", f7 = isoDeDia(d - 7);
+  $("diaPara").textContent = `Para el sorteo de ${nomK} del ${textoFecha(objetivo).toLowerCase()}. Junté lo que dicen todos los análisis de la app y te muestro lo que más se repite entre ellos.`;
+
+  // Señales para cada línea (0–9)
+  const lin = Array.from({ length: 10 }, () => []);
+  const sem = semanasDe(k).get(lun) || new Array(7).fill(null);
+  for (let j = 0; j < wd; j++) if (sem[j] && !lin[+sem[j][1]].includes("Repetiría la semana")) lin[+sem[j][1]].push("Repetiría la semana");
+  const pasado = m.get(f7 + k);
+  if (pasado) lin[+pasado[0]].push(`Como el ${DIAS[diaSemana(f7)].toLowerCase()} pasado (${pasado})`);
+  if (k === "T") {
+    const a = m.get(objetivo + "M"), b = m.get(f7 + "T");
+    if (a && b) for (const l of lineasCruce(a, b)) lin[l].push("Cruce de líneas");
+  }
+  const { dia, top } = sumaResta(m, objetivo, k);
+  const deSuma = new Set([...(dia ? dia.nums : []), ...top.map(x => x.n)].map(n => +n[0]));
+  for (const l of deSuma) lin[l].push("Suma y resta");
+  // Bola caliente de los métodos clásicos
+  const e = estadoNuevo();
+  for (const t of s) sumar(e, t);
+  const caliente = metodos(e, d, previoCompleto(k, s[s.length - 1]), objetivo).res["Bola caliente"];
+  for (const n of caliente) if (!lin[+n[0]].includes("Bola caliente")) lin[+n[0]].push("Bola caliente");
+
+  const lineas = lin.map((tags, l) => ({ l, tags })).filter(x => x.tags.length).sort((a, b) => b.tags.length - a.tags.length || a.l - b.l).slice(0, 4);
+  // Líneas señaladas por análisis de líneas (no por los mismos números)
+  const fuertes = new Set(lin.map((tags, l) => tags.some(g => g.startsWith("Repetiría") || g.startsWith("Como el") || g === "Cruce de líneas") ? l : -1).filter(l => l >= 0));
+  $("diaLineas").innerHTML = lineas.length ? lineas.map(x => `<div class="dia-l"><span class="bola">${nomLinea(x.l)}</span><div><b class="fuerza">${x.tags.length} ${x.tags.length === 1 ? "señal" : "señales"}</b><div class="tags">${x.tags.map(g => `<span class="tag">${g}</span>`).join("")}</div></div></div>`).join("")
+    : `<p class="nota">Hoy ningún análisis señala una línea en especial.</p>`;
+
+  // Números: en cuántos análisis aparece cada uno
+  const nums = new Map();
+  const poner = (n, tag) => { if (!nums.has(n)) nums.set(n, []); if (!nums.get(n).includes(tag)) nums.get(n).push(tag); };
+  if (dia) for (const n of dia.nums) poner(n, `Día y noche del ${DIAS_C[diaSemana(f7)].toLowerCase()} pasado`);
+  for (const x of top) poner(x.n, x.veces > 1 ? `Suma y resta (${x.veces} cuentas)` : "Suma y resta");
+  for (const n of caliente) poner(n, "Bola caliente");
+  const lista = [...nums].map(([n, tags]) => ({ n, tags, linea: fuertes.has(+n[0]) }))
+    .sort((a, b) => (b.tags.length + b.linea) - (a.tags.length + a.linea) || b.tags.length - a.tags.length || +b.linea - +a.linea).slice(0, 6);
+  $("diaNums").innerHTML = lista.map(x => `<div class="dia-n"><span class="bola mini">${x.n}</span><div><b>${charada(x.n)}</b><div class="tags">${x.tags.map(g => `<span class="tag">${g}</span>`).join("")}${x.linea ? `<span class="tag sol">Línea señalada</span>` : ""}</div></div></div>`).join("");
+
+  // La semana
+  const cuenta = sx => repetidos(sx).filter(Boolean).length;
+  const sM = semanasDe("M").get(lun) || [], sT = semanasDe("T").get(lun) || [];
+  let si = 0, n = 0;
+  for (let x = lun; x < d; x++) {
+    const fx = isoDeDia(x), ax = m.get(fx + "M"), bx = m.get(isoDeDia(x - 7) + "T"), tx = m.get(fx + "T");
+    if (ax && bx && tx) { n++; if (lineasCruce(ax, bx).includes(+tx[0])) si++; }
+  }
+  const puntos = [
+    wd ? `Líneas repetidas: <b>${cuenta(sM)}</b> al mediodía y <b>${cuenta(sT)}</b> en la noche. Lo normal en una semana entera es 1,8.` : "Empieza la semana: todavía no hay líneas repetidas.",
+    wd ? `${[...new Set(sem.slice(0, wd).filter(Boolean).map(x => x[1]))].length} líneas ya salieron ${k === "M" ? "al mediodía" : "en la noche"}: si sale una de ellas, se repite (${[...new Set(sem.slice(0, wd).filter(Boolean).map(x => x[1]))].length} de 10).` : "",
+    n ? `Cruce de líneas esta semana: <b>${si} de ${n}</b> noches.` : "",
+    dia ? `Día y noche del ${DIAS[diaSemana(f7)].toLowerCase()} pasado: ${dia.a} y ${dia.b} → ${dia.nums.join(", ")}.` : "",
+  ].filter(Boolean);
+  $("diaSemana").innerHTML = puntos.map(p => `<li>${p}</li>`).join("");
+  $("diaHonesto").textContent = "Cuantos más análisis señalan algo, más se repite en las cuentas, pero el sorteo no lo sabe: cada línea sigue teniendo 1 de 10 y cada fijo 1 de 100. Úsalo para escoger, no como seguridad.";
+}
+$("modoD").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; DIA.modo = b.dataset.v; pintarDelDia(); });
+
+/* ---------- CRUCE DE LÍNEAS ---------- */
+// La línea del mediodía de hoy con la línea de la noche del mismo día de la semana pasada: sumando o restando sale la línea de la noche
+const lineasCruce = (a, b) => [...new Set([(+a[0] + +b[0]) % 10, Math.abs(+a[0] - +b[0])])];
+const CRUCE = {};
+function pruebaCruce() {
+  const s = serie("T"), m = mapaFijos(), clave = s.length + (s.length ? s[s.length - 1].n : "");
+  if (CRUCE.clave === clave) return CRUCE;
+  const desde = iso(addDays(fechaDe(ahoraFlorida().fecha), -365));
+  const r = { clave, todo: { si: 0, n: 0, l: 0 }, anio: { si: 0, n: 0, l: 0 }, desde: null };
+  for (const t of s) {
+    const a = m.get(t.f + "M"), b = m.get(isoDeDia(diaNum(t.f) - 7) + "T");
+    if (!a || !b) continue;
+    r.desde ??= t.f;
+    const ls = lineasCruce(a, b), ok = ls.includes(+t.n[1]);
+    for (const x of t.f >= desde ? [r.todo, r.anio] : [r.todo]) { x.n++; x.l += ls.length; if (ok) x.si++; }
+  }
+  Object.assign(CRUCE, r);
+  return CRUCE;
+}
+// El dibujo: arriba el mediodía de esta semana, abajo la noche de la semana pasada, y la raya que cruza las primeras cifras
+function dibujoCruce(fA, a, fB, b) {
+  const num = (x, y, n) => n
+    ? `<text x="${x}" y="${y}" style="font:800 30px var(--font-num);fill:var(--fg)"><tspan style="fill:var(--vivo)">${n[0]}</tspan>${n[1]}</text>`
+    : `<text x="${x}" y="${y}" style="font:800 30px var(--font-num);fill:var(--muted)">?</text>`;
+  const caja = (x, y, titulo, sub) => `<rect x="${x}" y="${y}" width="170" height="70" rx="12" style="fill:var(--surface-2);stroke:var(--line);stroke-width:1.5"/>
+    <text x="${x + 12}" y="${y + 20}" style="font:700 12px var(--font-display);fill:var(--muted)">${titulo}</text>
+    <text x="${x + 12}" y="${y + 34}" style="font:600 10px var(--font-display);fill:var(--muted)">${sub}</text>`;
+  return `<svg viewBox="0 0 360 200" role="img" aria-label="Cruce: ${a || "?"} del mediodía con ${b} de la noche de la semana pasada">
+    <defs><marker id="flechaCruce" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--vivo)"/></marker></defs>
+    ${caja(14, 10, `${textoCorto(fA)} · ☀ mediodía`, "esta semana")}
+    ${num(110, 66, a)}
+    ${caja(176, 118, `${textoCorto(fB)} · ☾ noche`, "semana pasada")}
+    ${num(272, 174, b)}
+    <ellipse cx="119" cy="56" rx="14" ry="18" style="fill:none;stroke:var(--vivo);stroke-width:2.5"/>
+    <ellipse cx="281" cy="164" rx="14" ry="18" style="fill:none;stroke:var(--vivo);stroke-width:2.5"/>
+    <path d="M119 76 C 125 165, 200 170, 262 166" style="fill:none;stroke:var(--vivo);stroke-width:3;stroke-linecap:round" marker-end="url(#flechaCruce)"/>
+  </svg>`;
+}
+function pintarCruce() {
+  const m = mapaFijos(), f = sorteoObjetivo("T"), fB = isoDeDia(diaNum(f) - 7);
+  const a = m.get(f + "M"), b = m.get(fB + "T");
+  const cn = n => `<span class="cn"><u>${n[0]}</u>${n[1]}</span>`;
+  if (!b) { $("cruceDibujo").innerHTML = ""; $("cruceDice").textContent = "Falta la noche de la semana pasada para hacer el cruce."; }
+  else {
+    $("cruceDibujo").innerHTML = dibujoCruce(f, a, fB, b);
+    if (a) {
+      const ls = lineasCruce(a, b), x = +a[0], y = +b[0];
+      $("cruceDice").innerHTML = `Para la noche del ${textoFecha(f).toLowerCase()}: <b>${x} + ${y} = ${x + y}${x + y > 9 ? ` → ${(x + y) % 10}` : ""}</b> y <b>${Math.max(x, y)} − ${Math.min(x, y)} = ${Math.abs(x - y)}</b>. Líneas: ${ls.map(l => `<span class="chip-l">${nomLinea(l)}</span>`).join(" ")} · probabilidad real ${ls.length} de 10.`;
+    } else {
+      $("cruceDice").innerHTML = `Para la noche del ${textoFecha(f).toLowerCase()}: falta que salga el mediodía. Cuando salga, su primera cifra se suma y se resta con el <b>${b[0]}</b> (del ${b} del ${DIAS[diaSemana(fB)].toLowerCase()} pasado).`;
+    }
+  }
+  // Los días de esta semana (si es lunes sin mediodía, la semana pasada)
+  let d = diaNum(f), lun = lunesDe(d);
+  if (!m.get(isoDeDia(lun) + "M") || (d === lun && !a)) lun -= 7;
+  $("cruceSemTitulo").textContent = lun < lunesDe(d) ? "La semana pasada" : "Esta semana";
+  let si = 0, n = 0;
+  const filas = [];
+  for (let x = lun; x < lun + 7; x++) {
+    const fx = isoDeDia(x), ax = m.get(fx + "M"), bx = m.get(isoDeDia(x - 7) + "T"), tx = m.get(fx + "T");
+    if (!ax || !bx || !tx) continue;
+    const ls = lineasCruce(ax, bx), ok = ls.includes(+tx[0]);
+    n++; if (ok) si++;
+    filas.push(`<div class="cruce-dia"><b>${DIAS_C[diaSemana(fx)]}</b>${cn(ax)}<span class="x">✕</span>${cn(bx)}<span>→ ${ls.join(" · ")}</span><span>salió ${cn(tx)}</span><span class="${ok ? "ok" : "no"}">${ok ? "✔" : "✘"}</span></div>`);
+  }
+  $("cruceSemana").innerHTML = filas.length ? filas.join("") + `<p class="nota">${si} de ${n} ${n === 1 ? "noche" : "noches"}.</p>` : `<p class="nota">Todavía no hay noches esta semana.</p>`;
+  const pr = pruebaCruce(), lin = (c, x) => x.n ? `${c}: acertó <b>${x.si} de ${x.n.toLocaleString("es")}</b> noches (${pct(100 * x.si / x.n)}). Por suerte, con ${(x.l / x.n).toFixed(1).replace(".", ",")} líneas de media: ${pct(10 * x.l / x.n)}.` : "";
+  $("crucePrueba").innerHTML = [lin("Último año", pr.anio), lin(`Desde ${pr.desde ? fechaDe(pr.desde).getFullYear() : ""}`, pr.todo)].filter(Boolean).join("<br>");
 }
 $("modoL").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; LIN.modo = b.dataset.v; pintarLineas(); });
 $("linPreguntas").addEventListener("click", e => {
@@ -2067,7 +2255,7 @@ function pintarVista() {
   if (PREF.vista === "calendario") pintarCalendario();
   if (PREF.vista === "analisis") pintarAnalisis();
   if (PREF.vista === "charada") { pintarCharada(); pintarCompas(); pintarTablaCompas(); }
-  if (PREF.vista === "pronostico") { pintarPronostico(); if (!$("secGente").hidden) pintarGente(); if (!$("secLineas").hidden) pintarLineas(); }
+  if (PREF.vista === "pronostico") { pintarPronostico(); if (!$("secGente").hidden) pintarGente(); if (!$("secLineas").hidden) pintarLineas(); if (!$("secDia").hidden) pintarDelDia(); }
 }
 function irA(v) {
   if (!VISTAS.includes(v)) v = "hoy";
