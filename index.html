@@ -1168,16 +1168,21 @@ function cuentas(a, b) {
     [dos(Math.abs(+a[0] - +b[0]) * 10 + Math.abs(+a[1] - +b[1])), `c/c ${a}−${b}`],
   ];
 }
-// En cruz: la última cifra del día más la primera de la noche, y la primera de la noche menos la primera del día (19 y 79 → 9+7=16 → 6, 7−1=6 → 66)
+// En cruz: las dos rayas de la X (última del día con primera de la noche, primera del día con última de la noche),
+// cada una sumada o restada y juntadas; y el gancho de las dos primeras restadas (18 y 45 → 1+5=6, 8−4=4 → 64 · 19 y 79 → 9+7=16 → 6, 7−1=6 → 66)
 function enCruz(a, b) {
-  const s = +a[1] + +b[0], r = Math.abs(+b[0] - +a[0]);
-  return [`${s % 10}${r}`, `${a[1]}+${b[0]}=${s}${s > 9 ? ` → ${s % 10}` : ""} · ${Math.max(+a[0], +b[0])}−${Math.min(+a[0], +b[0])}=${r}`];
+  const sr = (x, y) => { const s = +x + +y, r = Math.abs(x - y); return [[s % 10, `${x}+${y}=${s}${s > 9 ? ` → ${s % 10}` : ""}`], [r, `${Math.max(x, y)}−${Math.min(x, y)}=${r}`]]; };
+  const d1 = sr(a[1], b[0]), d2 = sr(a[0], b[1]), g = sr(a[0], b[0])[1];
+  const nums = new Map(), poner = (p, q) => { const n = `${p[0]}${q[0]}`; if (!nums.has(n)) nums.set(n, `${p[1]} y ${q[1]}`); };
+  for (const p of d2) for (const q of d1) { poner(p, q); poner(q, p); }
+  poner(d1[0], g);
+  return { nums, d1, d2, g };
 }
 // Para el sorteo (f, k): la combinación día + noche del mismo día pasado, y todas las parejas de la semana
 function sumaResta(m, f, k) {
   const d = diaNum(f), f7 = isoDeDia(d - 7);
   const dM = m.get(f7 + "M"), dT = m.get(f7 + "T");
-  const dia = dM && dT ? { a: dM, b: dT, nums: [...new Set(cuentas(dM, dT).map(r => r[0]))], cruz: enCruz(dM, dT)[0] } : null;
+  const dia = dM && dT ? { a: dM, b: dT, nums: [...new Set(cuentas(dM, dT).map(r => r[0]))], cruz: [...enCruz(dM, dT).nums.keys()] } : null;
   // Los días de esta semana hasta el sorteo; si es lunes al mediodía, la semana pasada entera
   let lun = lunesDe(d), hasta = d;
   const esta = (x, kk) => x < d || (x === d && k === "T" && kk === "M");
@@ -1219,9 +1224,9 @@ function pruebaSumaResta(k) {
       r.dia.desde ??= t.f;
       for (const c of cuando) { const x = r.dia[c]; x.n++; x.nums += dia.nums.length; if (ok) x.si++; }
       if (ok) r.dia.ultimos.push({ f: t.f, fijo, receta: cuentas(dia.a, dia.b).find(c => c[0] === fijo)[1] });
-      const okC = dia.cruz === fijo;
+      const okC = dia.cruz.includes(fijo);
       r.cruz.desde ??= t.f;
-      for (const c of cuando) { const x = r.cruz[c]; x.n++; x.nums++; if (okC) x.si++; }
+      for (const c of cuando) { const x = r.cruz[c]; x.n++; x.nums += dia.cruz.length; if (okC) x.si++; }
       if (okC) r.cruz.ultimos.push({ f: t.f, fijo, receta: `${dia.a} y ${dia.b}` });
     }
     if (top.length === 10) {
@@ -1235,21 +1240,21 @@ function pruebaSumaResta(k) {
   SR[k] = r;
   return r;
 }
-// El dibujo: el día arriba, la noche abajo, la raya en diagonal (suma) y el gancho de las primeras cifras (resta)
-function dibujoEnCruz(a, b, nc, receta) {
+// El dibujo: el día arriba, la noche abajo, las dos rayas de la X y el gancho de las primeras cifras
+function dibujoEnCruz(a, b, cz) {
   const cifra = (x, y, c) => `<text x="${x}" y="${y}" text-anchor="middle" style="font:800 40px var(--font-num);fill:var(--fg)">${c}</text>`;
-  const [suma, resta] = receta.split(" · ");
-  return `<svg viewBox="0 0 360 170" role="img" aria-label="En cruz: ${a} con ${b} da ${nc}">
+  const raya = (d, color) => `style="fill:none;stroke:${color};stroke-width:3;stroke-linecap:round" d="${d}"`;
+  const linea = (y, color, txt) => `<text x="176" y="${y}" style="font:800 15px var(--font-num);fill:${color}">${txt}</text>`;
+  return `<svg viewBox="0 0 400 170" role="img" aria-label="En cruz: ${a} con ${b}">
     ${cifra(70, 62, a[0])}${cifra(104, 62, a[1])}${cifra(70, 146, b[0])}${cifra(104, 146, b[1])}
     <text x="126" y="50" style="font:700 13px var(--font-display);fill:var(--muted)">☀ día</text>
     <text x="126" y="134" style="font:700 13px var(--font-display);fill:var(--muted)">☾ noche</text>
-    <circle cx="104" cy="48" r="19" style="fill:none;stroke:var(--vivo);stroke-width:2.5"/>
-    <circle cx="70" cy="132" r="19" style="fill:none;stroke:var(--vivo);stroke-width:2.5"/>
-    <path d="M94 64 L80 116" style="fill:none;stroke:var(--vivo);stroke-width:3;stroke-linecap:round"/>
-    <path d="M52 44 C 28 70, 28 110, 52 136" style="fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round"/>
-    <text x="180" y="78" style="font:800 17px var(--font-num);fill:var(--vivo)">${suma}</text>
-    <text x="180" y="106" style="font:800 17px var(--font-num);fill:var(--accent)">${resta}</text>
-    <text x="180" y="146" style="font:800 24px var(--font-num);fill:var(--fg)">→ ${nc}</text>
+    <path ${raya("M96 66 L78 112", "var(--vivo)")}/>
+    <path ${raya("M78 66 L96 112", "var(--accent)")}/>
+    <path ${raya("M52 44 C 28 70, 28 110, 52 136", "#16a34a")}/>
+    ${linea(56, "var(--vivo)", `${cz.d1[0][1]} · ${cz.d1[1][1]}`)}
+    ${linea(84, "var(--accent)", `${cz.d2[0][1]} · ${cz.d2[1][1]}`)}
+    ${linea(112, "#16a34a", cz.g[1])}
   </svg>`;
 }
 function pintarSumaResta(k, objetivo) {
@@ -1268,11 +1273,11 @@ function pintarSumaResta(k, objetivo) {
     $("srDia").innerHTML = cuentas(dia.a, dia.b).filter((c, i, t) => t.findIndex(o => o[0] === c[0]) === i).map(([n, receta]) => bola(n, receta)).join("");
     $("srDiaPrueba").innerHTML = prueba(pr.dia);
     $("srDiaUltimos").innerHTML = ultimas(pr.dia);
-    const [nc, receta] = enCruz(dia.a, dia.b);
+    const cz = enCruz(dia.a, dia.b);
     $("srCruzTitulo").textContent = `✖️ En cruz: ${dia.a} con ${dia.b}`;
-    $("srCruzNota").innerHTML = `Se cruzan las cifras en X: la <b>última</b> del mediodía con la <b>primera</b> de la noche (suma), y las dos <b>primeras</b> (resta). Sale el <b>${nc}</b> (${charada(nc)}).`;
-    $("srCruz").innerHTML = dibujoEnCruz(dia.a, dia.b, nc, receta);
-    $("srCruzPrueba").innerHTML = prueba(pr.cruz, 1);
+    $("srCruzNota").innerHTML = `Se cruzan las cifras en X: la <b>última</b> del mediodía con la <b>primera</b> de la noche, y la <b>primera</b> del mediodía con la <b>última</b> de la noche. Cada raya se suma o se resta y se juntan. El gancho verde resta las dos <b>primeras</b>. Salen ${cz.nums.size} números:`;
+    $("srCruz").innerHTML = dibujoEnCruz(dia.a, dia.b, cz) + `<div class="sr-nums">${[...cz.nums].map(([n, r]) => bola(n, r)).join("")}</div>`;
+    $("srCruzPrueba").innerHTML = prueba(pr.cruz);
     $("srCruzUltimos").innerHTML = ultimas(pr.cruz);
   } else {
     $("srDiaNota").textContent = `No hay los dos sorteos del ${nomDia} pasado.`;
@@ -1830,7 +1835,7 @@ function analisisDia(k, f) {
   if (dia) for (const n of dia.nums) poner(n, `Día y noche del ${DIAS_C[diaSemana(f7)].toLowerCase()} pasado`);
   for (const x of top) poner(x.n, x.veces > 1 ? `Suma y resta (${x.veces} cuentas)` : "Suma y resta");
   for (const n of caliente) poner(n, "Bola caliente");
-  if (dia) poner(dia.cruz, "En cruz");
+  if (dia) for (const n of dia.cruz) poner(n, "En cruz");
   const lista = [...nums].map(([n, tags]) => ({ n, tags, linea: fuertes.has(+n[0]), motivo: motivos[+n[0]] }))
     .sort((a, b) => (b.tags.length + b.linea) - (a.tags.length + a.linea) || b.tags.length - a.tags.length || +b.linea - +a.linea).slice(0, 6);
   return { lin, lineas, lista, dia, top, caliente, cruce, sem, wd, lun, f7 };
@@ -1851,7 +1856,7 @@ function cumplido(k, f) {
   if (a.dia && a.dia.nums.includes(fijo)) si.push("Día y noche del día pasado");
   if (a.top.some(x => x.n === fijo)) si.push("Suma y resta (10 números)");
   if (a.caliente.includes(fijo)) si.push("Bola caliente");
-  if (a.dia && a.dia.cruz === fijo) si.push("En cruz");
+  if (a.dia && a.dia.cruz.includes(fijo)) si.push("En cruz");
   return { k, f, fijo, corridos, si: [...new Set(si)], lineaTop: a.lineas.length && a.lineas[0].l === l, numTop: top6.has(fijo) };
 }
 function pintarCumplidos() {
@@ -1894,7 +1899,7 @@ function pintarDelDia() {
     wd ? `Líneas repetidas: <b>${cuenta(sM)}</b> al mediodía y <b>${cuenta(sT)}</b> en la noche. Lo normal en una semana entera es 1,8.` : "Empieza la semana: todavía no hay líneas repetidas.",
     wd ? `${abiertas} líneas ya salieron ${k === "M" ? "al mediodía" : "en la noche"}: si sale una de ellas, se repite (${abiertas} de 10).` : "",
     n ? `Cruce de líneas esta semana: <b>${si} de ${n}</b> noches.` : "",
-    dia ? `Día y noche del ${DIAS[diaSemana(f7)].toLowerCase()} pasado: ${dia.a} y ${dia.b} → ${dia.nums.join(", ")}. En cruz: <b>${dia.cruz}</b>.` : "",
+    dia ? `Día y noche del ${DIAS[diaSemana(f7)].toLowerCase()} pasado: ${dia.a} y ${dia.b} → ${dia.nums.join(", ")}. En cruz: <b>${dia.cruz.join(", ")}</b>.` : "",
   ].filter(Boolean);
   $("diaSemana").innerHTML = puntos.map(p => `<li>${p}</li>`).join("");
   $("diaHonesto").textContent = "Cuantos más análisis señalan algo, más se repite en las cuentas, pero el sorteo no lo sabe: cada línea sigue teniendo 1 de 10 y cada fijo 1 de 100. Úsalo para escoger, no como seguridad.";
